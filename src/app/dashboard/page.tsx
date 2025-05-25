@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       directusUrl = 'http://localhost:8055';
     } else {
-      directusUrl = 'https://directus-production-f0ea7.up.railway.app';
+      directusUrl = 'https://directus-production-deda.up.railway.app/admin';
     }
     window.open(directusUrl, '_blank');
   };
