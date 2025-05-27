@@ -36,11 +36,20 @@ async function confirmDeposit(request: AuthRequest) {
       );
     }
 
+    const allowedPlans = [50, 100, 150, 250, 500, 1000, 1500, 2500];
+    const depositAmount = parseFloat(amount);
+    if (!allowedPlans.includes(depositAmount)) {
+      return NextResponse.json(
+        { message: "Deposit amount must match a valid plan." },
+        { status: 400 }
+      );
+    }
+
     // Create deposit record
     const deposit = await prisma.deposit.create({
       data: {
         userId: Number(userId),
-        amount: parseFloat(amount),
+        amount: depositAmount,
         currency,
         transactionHash,
         paymentProofUrl, // In a real app, this would be the URL to the uploaded file
@@ -49,13 +58,17 @@ async function confirmDeposit(request: AuthRequest) {
     });
 
     // Immediately upsert UserPlanProgress so user can start earning
-    const planAmount = Math.floor(parseFloat(amount));
     await prisma.userPlanProgress.upsert({
-      where: { userId_planAmount: { userId: Number(userId), planAmount } },
+      where: {
+        userId_planAmount: {
+          userId: Number(userId),
+          planAmount: depositAmount,
+        },
+      },
       update: {},
       create: {
         userId: Number(userId),
-        planAmount,
+        planAmount: depositAmount,
       },
     });
 

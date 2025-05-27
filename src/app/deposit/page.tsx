@@ -397,13 +397,22 @@ function DepositPage() {
                 <label className="block mb-2 font-medium text-sm">
                   Deposit Amount
                 </label>
-                <input
-                  type="number"
-                  placeholder="Enter amount"
+                <select
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full p-3 rounded bg-gray-700 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                  required
+                >
+                  <option value="">Select amount</option>
+                  <option value="50">$50</option>
+                  <option value="100">$100</option>
+                  <option value="150">$150</option>
+                  <option value="250">$250</option>
+                  <option value="500">$500</option>
+                  <option value="1000">$1000</option>
+                  <option value="1500">$1500</option>
+                  <option value="2500">$2500</option>
+                </select>
 
                 <label className="block mb-2 font-medium text-sm">
                   Transaction Hash

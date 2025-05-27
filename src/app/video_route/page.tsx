@@ -39,6 +39,7 @@ const Videos = () => {
     null | "pending" | "confirmed" | "rejected"
   >(null);
   const [showRejectedModal, setShowRejectedModal] = useState(false);
+  const [roundError, setRoundError] = useState("");
 
   // Fetch user's active plan on component mount
   useEffect(() => {
@@ -140,6 +141,7 @@ const Videos = () => {
     }
     try {
       setLastProfit(currentPlan.profit);
+      setRoundError("");
       console.log(
         "[COMPLETE ROUND] Sending request for planAmount:",
         currentPlan.planAmount
@@ -158,6 +160,7 @@ const Videos = () => {
       console.log("[COMPLETE ROUND] Response status:", response.status);
       console.log("[COMPLETE ROUND] Response data:", data);
       if (!response.ok) {
+        setRoundError(data.error || "Failed to complete round");
         throw new Error(data.error || "Failed to complete round");
       }
       setProgress(data.progress);
@@ -186,6 +189,7 @@ const Videos = () => {
         typeof error === "object" && error !== null && "message" in error
           ? (error as { message?: string }).message
           : "Failed to complete round";
+      setRoundError(errorMessage || "Failed to complete round");
       toast.error(errorMessage || "Failed to complete round");
       setShowMessage(true);
     }
@@ -436,6 +440,9 @@ const Videos = () => {
               </div>
             ) : (
               <p>Round processing... Please wait.</p>
+            )}
+            {showMessage && roundError && (
+              <div className="text-red-500 text-center mb-4">{roundError}</div>
             )}
           </div>
         )}

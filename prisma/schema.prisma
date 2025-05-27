@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,28 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  profile    Profile?
-  sessions   Session[]
-  deposits   Deposit[]
-  stakings   Staking[]
-  withdrawals Withdrawal[]
-  fileUploads FileUpload[]
+  id                 Int                @id @default(autoincrement())
+  name               String
+  email              String             @unique
+  password           String
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
   userPlanProgresses UserPlanProgress[]
+  deposits           Deposit[]
+  fileUploads        FileUpload[]
+  profile            Profile?
+  sessions           Session[]
+  stakings           Staking[]
+  withdrawals        Withdrawal[]
 
   @@map("users")
 }
 
-// User profile - for additional user information
 model Profile {
   id        Int      @id @default(autoincrement())
   bio       String?
@@ -39,14 +32,11 @@ model Profile {
   userId    Int      @unique @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
 }
 
-// Session model for managing user sessions
 model Session {
   id        String   @id @default(uuid())
   token     String   @unique
@@ -54,31 +44,25 @@ model Session {
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
-// File Upload model for storing files
 model FileUpload {
   id        String   @id @default(uuid())
   fileName  String
   fileType  String
   fileSize  Int
-  fileData  String   @db.Text // Base64 encoded file data
+  fileData  String
   userId    Int      @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("file_uploads")
 }
 
-// Deposit model for tracking user deposits
 model Deposit {
   id              String    @id @default(uuid())
   userId          Int       @map("user_id")
@@ -86,65 +70,57 @@ model Deposit {
   currency        String
   transactionHash String?   @map("transaction_hash")
   paymentProofUrl String?   @map("payment_proof_url")
-  status          String    @default("pending") // pending, confirmed, rejected
+  status          String    @default("pending")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   confirmedAt     DateTime? @map("confirmed_at")
-
-  // Relations
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("deposits")
 }
 
-// Staking model for tracking user staking activities
 model Staking {
-  id          String   @id @default(uuid())
-  userId      Int      @map("user_id")
-  depositId   String?  @map("deposit_id")
-  amount      Float
-  currency    String
-  apy         Float    @default(0)
-  startDate   DateTime @default(now()) @map("start_date")
-  endDate     DateTime @map("end_date")
-  status      String   @default("active") // active, completed, cancelled
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    Int      @map("user_id")
+  depositId String?  @map("deposit_id")
+  amount    Float
+  currency  String
+  apy       Float    @default(0)
+  startDate DateTime @default(now()) @map("start_date")
+  endDate   DateTime @map("end_date")
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("stakings")
 }
 
-// Withdrawal model for tracking user withdrawals
 model Withdrawal {
-  id              String    @id @default(uuid())
-  userId          Int       @map("user_id")
-  amount          Float
-  currency        String
+  id               String    @id @default(uuid())
+  userId           Int       @map("user_id")
+  amount           Float
+  currency         String
   recipientAddress String    @map("recipient_address")
-  transactionHash String?   @map("transaction_hash")
-  status          String    @default("pending") // pending, confirm, reject
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  processedAt     DateTime? @map("processed_at")
-
-  // Relations
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionHash  String?   @map("transaction_hash")
+  status           String    @default("pending")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  processedAt      DateTime? @map("processed_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("withdrawals")
 }
 
 model UserPlanProgress {
-  id             Int      @id @default(autoincrement())
-  userId         Int
-  planAmount     Int
-  profit         Int      @default(0)
-  roundCount     Int      @default(0)
-  lastRoundDate  DateTime?
-  canWithdraw    Boolean  @default(false)
-  user           User     @relation(fields: [userId], references: [id])
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  planAmount    Int
+  profit        Int       @default(0)
+  roundCount    Int       @default(0)
+  lastRoundDate DateTime?
+  canWithdraw   Boolean   @default(false)
+  user          User      @relation(fields: [userId], references: [id])
 
   @@unique([userId, planAmount])
 }
