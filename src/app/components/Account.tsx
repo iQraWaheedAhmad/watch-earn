@@ -29,14 +29,15 @@ export default function AccountsPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          const latest = data.deposits?.[0];
-          if (!latest) {
-            setDepositStatus(null);
-          } else if (latest.status === "pending") {
-            setDepositStatus("pending");
-          } else if (latest.status === "confirmed") {
+          const deposits = data.deposits || [];
+          const confirmedDeposit = deposits.find(
+            (d) => d.status === "confirmed"
+          );
+          if (confirmedDeposit) {
             setDepositStatus("confirmed");
-          } else if (latest.status === "rejected") {
+          } else if (deposits.some((d) => d.status === "pending")) {
+            setDepositStatus("pending");
+          } else if (deposits.some((d) => d.status === "rejected")) {
             setDepositStatus("rejected");
           } else {
             setDepositStatus(null);
