@@ -81,15 +81,15 @@ export const POST = requireAuth(async (req: AuthRequest) => {
     const now = new Date();
     if (progress.lastRoundDate) {
       const lastRound = new Date(progress.lastRoundDate);
-      const next12am = new Date(lastRound);
-      next12am.setHours(24, 0, 0, 0);
-      if (now < next12am) {
-        const msLeft = next12am.getTime() - now.getTime();
-        const hoursLeft = Math.ceil(msLeft / (1000 * 60 * 60));
+      // Compare only the date part (YYYY-MM-DD)
+      const nowDate = now.toISOString().slice(0, 10);
+      const lastRoundDate = lastRound.toISOString().slice(0, 10);
+      if (nowDate === lastRoundDate) {
         return NextResponse.json(
           {
-            error: `Please wait ${hoursLeft} more hours before starting the next round`,
-            canTryAgainIn: msLeft,
+            error:
+              "You can only complete one round per day. Please try again tomorrow.",
+            canTryAgainIn: 24 * 60 * 60 * 1000, // 24 hours in ms
           },
           { status: 400 }
         );
