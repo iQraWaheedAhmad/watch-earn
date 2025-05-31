@@ -20,8 +20,8 @@ const Videos = () => {
   const { user, getToken } = useAuth();
 
   const videoUrls = [
-    "https://www.youtube.com/watch?v=LXb3EKWsInQ",
-    // "https://www.youtube.com/watch?v=ScMzIvxBSi4",
+    // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+    "https://www.youtube.com/watch?v=ScMzIvxBSi4",
     // "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
     // "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
   ];
@@ -83,16 +83,30 @@ const Videos = () => {
       return;
     }
     const lastRound = new Date(currentPlan.lastRoundDate);
-    // Next eligible time is next 12am after lastRound
-    const next12am = new Date(lastRound);
-    next12am.setHours(24, 0, 0, 0);
-    const update = () => {
+    const now = new Date();
+    const nowDate = now.toISOString().slice(0, 10);
+    const lastRoundDate = lastRound.toISOString().slice(0, 10);
+    if (nowDate === lastRoundDate) {
+      // Calculate ms left until next day
+      const nextDay = new Date(now);
+      nextDay.setDate(now.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0);
+      setTimeLeft(nextDay.getTime() - now.getTime());
+    } else {
+      setTimeLeft(0);
+    }
+    const interval = setInterval(() => {
       const now = new Date();
-      const diff = next12am.getTime() - now.getTime();
-      setTimeLeft(diff > 0 ? diff : 0);
-    };
-    update();
-    const interval = setInterval(update, 1000);
+      const nowDate = now.toISOString().slice(0, 10);
+      if (nowDate === lastRoundDate) {
+        const nextDay = new Date(now);
+        nextDay.setDate(now.getDate() + 1);
+        nextDay.setHours(0, 0, 0, 0);
+        setTimeLeft(nextDay.getTime() - now.getTime());
+      } else {
+        setTimeLeft(0);
+      }
+    }, 1000);
     return () => clearInterval(interval);
   }, [currentPlan]);
 

@@ -122,12 +122,15 @@ export default function Navbar() {
           if (lastRoundDate) {
             const lastRound = new Date(lastRoundDate);
             const now = new Date();
-            // Next eligible time is next 12am after lastRound
-            const next12am = new Date(lastRound);
-            next12am.setHours(24, 0, 0, 0);
-            if (now < next12am) {
+            const nowDate = now.toISOString().slice(0, 10);
+            const lastRoundDateStr = lastRound.toISOString().slice(0, 10);
+            if (nowDate === lastRoundDateStr) {
+              // Calculate ms left until next day
+              const nextDay = new Date(now);
+              nextDay.setDate(now.getDate() + 1);
+              nextDay.setHours(0, 0, 0, 0);
               setCanStartTask(false);
-              setTimer(next12am.getTime() - now.getTime());
+              setTimer(nextDay.getTime() - now.getTime());
             } else {
               setCanStartTask(true);
               setTimer(0);
