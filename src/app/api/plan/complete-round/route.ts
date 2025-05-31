@@ -77,18 +77,19 @@ export const POST = requireAuth(async (req: AuthRequest) => {
       });
       console.log("[COMPLETE ROUND API] Created new progress:", progress);
     }
-    // Check if user can start a new round (24h cooldown)
+    // Check if user can start a new round (next midnight cooldown)
     const now = new Date();
     if (progress.lastRoundDate) {
       const lastRound = new Date(progress.lastRoundDate);
-      const diffMs = now.getTime() - lastRound.getTime();
-      const hoursSinceLastRound = diffMs / (1000 * 60 * 60);
-      if (hoursSinceLastRound < 24) {
-        const hoursLeft = Math.ceil(24 - hoursSinceLastRound);
+      // Compare only the date part (YYYY-MM-DD)
+      const nowDate = now.toISOString().slice(0, 10);
+      const lastRoundDate = lastRound.toISOString().slice(0, 10);
+      if (nowDate === lastRoundDate) {
         return NextResponse.json(
           {
-            error: `Please wait ${hoursLeft} more hours before starting the next round`,
-            canTryAgainIn: hoursLeft * 60 * 60 * 1000, // in milliseconds
+            error:
+              "You can only complete one round per day. Please try again tomorrow.",
+            canTryAgainIn: 24 * 60 * 60 * 1000, // 24 hours in ms
           },
           { status: 400 }
         );

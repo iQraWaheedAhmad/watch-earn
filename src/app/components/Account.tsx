@@ -7,7 +7,9 @@ import { useAuth } from "@/context/AuthContext";
 export default function AccountsPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
-  const [depositStatus, setDepositStatus] = useState<null | "pending" | "confirmed" | "rejected">(null);
+  const [depositStatus, setDepositStatus] = useState<
+    null | "pending" | "confirmed" | "rejected"
+  >(null);
   const [showRejectedModal, setShowRejectedModal] = useState(false);
   const [canStartTask, setCanStartTask] = useState(true);
   const [timer, setTimer] = useState(0);
@@ -27,14 +29,15 @@ export default function AccountsPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          const latest = data.deposits?.[0];
-          if (!latest) {
-            setDepositStatus(null);
-          } else if (latest.status === "pending") {
-            setDepositStatus("pending");
-          } else if (latest.status === "confirmed") {
+          const deposits = data.deposits || [];
+          const confirmedDeposit = deposits.find(
+            (d) => d.status === "confirmed"
+          );
+          if (confirmedDeposit) {
             setDepositStatus("confirmed");
-          } else if (latest.status === "rejected") {
+          } else if (deposits.some((d) => d.status === "pending")) {
+            setDepositStatus("pending");
+          } else if (deposits.some((d) => d.status === "rejected")) {
             setDepositStatus("rejected");
           } else {
             setDepositStatus(null);
@@ -72,12 +75,15 @@ export default function AccountsPage() {
           if (lastRoundDate) {
             const lastRound = new Date(lastRoundDate);
             const now = new Date();
-            // Next eligible time is next 12am after lastRound
-            const next12am = new Date(lastRound);
-            next12am.setHours(24, 0, 0, 0);
-            if (now < next12am) {
+            const nowDate = now.toISOString().slice(0, 10);
+            const lastRoundDateStr = lastRound.toISOString().slice(0, 10);
+            if (nowDate === lastRoundDateStr) {
+              // Calculate ms left until next day
+              const nextDay = new Date(now);
+              nextDay.setDate(now.getDate() + 1);
+              nextDay.setHours(0, 0, 0, 0);
               setCanStartTask(false);
-              setTimer(next12am.getTime() - now.getTime());
+              setTimer(nextDay.getTime() - now.getTime());
             } else {
               setCanStartTask(true);
               setTimer(0);
@@ -174,10 +180,17 @@ export default function AccountsPage() {
                         ×
                       </button>
                       <div className="text-4xl mb-4">❌📧</div>
-                      <h3 className="text-xl font-bold text-red-600 mb-2">Deposit Rejected</h3>
+                      <h3 className="text-xl font-bold text-red-600 mb-2">
+                        Deposit Rejected
+                      </h3>
                       <p className="text-gray-800 mb-4">
-                        We have sent you an email with the reason for your deposit rejection.<br />
-                        <span className="text-gray-600">If you have any questions or need help, please contact our support team. We&#39;re here to help! 😊</span>
+                        We have sent you an email with the reason for your
+                        deposit rejection.
+                        <br />
+                        <span className="text-gray-600">
+                          If you have any questions or need help, please contact
+                          our support team. We&#39;re here to help! 😊
+                        </span>
                       </p>
                       <button
                         onClick={() => setShowRejectedModal(false)}
