@@ -22,9 +22,7 @@ export default function Detail() {
           📌 <strong>Profit Withdrawal:</strong> You can withdraw your earnings **only once per day**, with a minimum gap of **12 hours** between withdrawals.
         </p>
 
-        <p className="text-lg">
-          📌 <strong>Initial Investment:</strong> Your actual investment amount can be withdrawn after <strong>30 days</strong>.
-        </p>
+        
 
         <p className="text-lg">
           ⚠️ <strong>Policy Notice:</strong> Withdrawals must follow the **12-hour gap rule** to ensure a smooth transaction process.

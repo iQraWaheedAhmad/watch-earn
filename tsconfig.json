@@ -24,10 +24,7 @@
         "./src/*"
       ]
     },
-    "types": [
-      "react",
-      "react-dom"
-    ],
+    "types": ["react", "react-dom", "node"],
     "plugins": [
       {
         "name": "next"
