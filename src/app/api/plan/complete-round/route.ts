@@ -81,9 +81,9 @@ export const POST = requireAuth(async (req: AuthRequest) => {
     const now = new Date();
     if (progress.lastRoundDate) {
       const lastRound = new Date(progress.lastRoundDate);
-      // Compare only the date part (YYYY-MM-DD)
-      const nowDate = now.toISOString().slice(0, 10);
-      const lastRoundDate = lastRound.toISOString().slice(0, 10);
+      // Compare only the date part (YYYY-MM-DD) in local time
+      const nowDate = now.toLocaleDateString("en-CA");
+      const lastRoundDate = lastRound.toLocaleDateString("en-CA");
       if (nowDate === lastRoundDate) {
         return NextResponse.json(
           {
