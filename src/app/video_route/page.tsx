@@ -21,11 +21,7 @@ const Videos = () => {
 
   const videoUrls = [
 
-      "https://www.youtube.com/watch?v=4uJLLev3Ulg",
-   // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
-    // "https://www.youtube.com/watch?v=ScMzIvxBSi4",  
-
-    // youtube videos
+        // youtube videos
     "https://youtu.be/DsG7tU630pE?si=rB338lJMR7pVdv1f",
     // "https://www.youtube.com/watch?v=4uJLLev3Ulg",
     // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
