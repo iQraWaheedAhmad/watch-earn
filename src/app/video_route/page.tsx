@@ -20,9 +20,17 @@ const Videos = () => {
   const { user, getToken } = useAuth();
 
   const videoUrls = [
+
       "https://www.youtube.com/watch?v=4uJLLev3Ulg",
    // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
     // "https://www.youtube.com/watch?v=ScMzIvxBSi4",  
+
+    // youtube videos
+    "https://youtu.be/DsG7tU630pE?si=rB338lJMR7pVdv1f",
+    // "https://www.youtube.com/watch?v=4uJLLev3Ulg",
+    // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+    // "https://www.youtube.com/watch?v=ScMzIvxBSi4",
+
     // "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
     // "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
   ];
@@ -85,8 +93,8 @@ const Videos = () => {
     }
     const lastRound = new Date(currentPlan.lastRoundDate);
     const now = new Date();
-    const nowDate = now.toISOString().slice(0, 10);
-    const lastRoundDate = lastRound.toISOString().slice(0, 10);
+    const nowDate = now.toLocaleDateString('en-CA');
+    const lastRoundDate = lastRound.toLocaleDateString('en-CA');
     if (nowDate === lastRoundDate) {
       // Calculate ms left until next day
       const nextDay = new Date(now);
@@ -98,7 +106,7 @@ const Videos = () => {
     }
     const interval = setInterval(() => {
       const now = new Date();
-      const nowDate = now.toISOString().slice(0, 10);
+      const nowDate = now.toLocaleDateString('en-CA');
       if (nowDate === lastRoundDate) {
         const nextDay = new Date(now);
         nextDay.setDate(now.getDate() + 1);

@@ -122,8 +122,8 @@ export default function Navbar() {
           if (lastRoundDate) {
             const lastRound = new Date(lastRoundDate);
             const now = new Date();
-            const nowDate = now.toISOString().slice(0, 10);
-            const lastRoundDateStr = lastRound.toISOString().slice(0, 10);
+            const nowDate = now.toLocaleDateString('en-CA');
+            const lastRoundDateStr = lastRound.toLocaleDateString('en-CA');
             if (nowDate === lastRoundDateStr) {
               // Calculate ms left until next day
               const nextDay = new Date(now);

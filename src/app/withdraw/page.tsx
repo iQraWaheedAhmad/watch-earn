@@ -75,10 +75,11 @@ function WithdrawPage() {
         });
         const data = await res.json();
         if (res.ok && Array.isArray(data.progresses)) {
+          const hasAnyRounds = data.progresses.some((p) => p.roundCount > 0);
           const eligible = data.progresses.some(
             (p) => p.canWithdraw && p.profit > 0 && p.roundCount > 0
           );
-          if (!eligible) {
+          if (!eligible && !hasAnyRounds) {
             router.push("/video_route?reason=complete_videos_first");
             // Force refetch to update state after redirect
             await fetch("/api/plan/all-progress", {

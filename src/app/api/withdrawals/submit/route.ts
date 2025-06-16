@@ -28,7 +28,7 @@ async function submitWithdrawal(request: AuthRequest) {
     }
 
     // Validate amount is a positive number
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = Math.round(parseFloat(amount));
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return NextResponse.json(
         { message: "Amount must be a positive number" },
