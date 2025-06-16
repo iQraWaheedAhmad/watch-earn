@@ -151,7 +151,7 @@ const Videos = () => {
     fetchDepositStatus();
   }, [user, getToken]);
 
-  // Update the completeRound function in video_route.tsx
+  // Update the completeRound function 
   const completeRound = async () => {
     if (!currentPlan) {
       toast.error("No active plan found");
