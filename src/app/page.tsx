@@ -13,12 +13,7 @@ export default function Home() {
   return (
     <div>
    
-    <Hero />
    
-      <MoreInfo/>
-      <Account/>
-      <Detail />
-      <Footer/>
     </div>
   );
 }
