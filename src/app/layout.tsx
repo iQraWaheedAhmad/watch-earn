@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import Navbar from './components/Navbar';
-import Chat from './livechat/Chat';
+
 import { AuthProvider } from '@/context/AuthContext';
 
 const inter = Inter({
@@ -27,7 +27,7 @@ export default function RootLayout({
         <AuthProvider>
         <Navbar />
           <main className="pt-16">{children}</main>
-          <Chat/>
+          
         </AuthProvider>
       </body>
     </html>
