@@ -156,7 +156,7 @@ function WithdrawConfirmPage() {
                 <ul className="list-disc pl-5 space-y-1 text-gray-300">
                   <li>Your withdrawal is being processed</li>
                   <li>You will receive a notification once confirmed</li>
-                  <li>Please allow up to 24 hours for processing</li>
+                  <li>Your request will be processed within 1 to 3 days</li>
                   <li>Check withdrawal history for status updates</li>
                 </ul>
               </div>
@@ -194,7 +194,7 @@ function WithdrawConfirmPage() {
                     <p className="text-gray-400 text-sm">
                       Estimated Processing Time
                     </p>
-                    <p className="text-md font-medium">24 hours</p>
+                    <p className="text-md font-medium">1 to 3 days</p>
                   </div>
                 </div>
               </div>

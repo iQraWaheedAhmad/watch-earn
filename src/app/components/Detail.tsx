@@ -19,13 +19,13 @@ export default function Detail() {
         </h1>
 
         <p className="text-lg mt-4">
-          📌 <strong>Profit Withdrawal:</strong> You can withdraw your earnings **only once per day**, with a minimum gap of **12 hours** between withdrawals.
+          📌 <strong>Profit Withdrawal:</strong> You can withdraw your earnings **only 1 to 3 days**, with a minimum gap of **1 to 3** between withdrawals.
         </p>
 
         
 
         <p className="text-lg">
-          ⚠️ <strong>Policy Notice:</strong> Withdrawals must follow the **12-hour gap rule** to ensure a smooth transaction process.
+          ⚠️ <strong>Policy Notice:</strong> Withdrawals must follow the **1 to 3 days gap rule** to ensure a smooth transaction process.
         </p> 
 
         <p className="text-lg font-semibold text-yellow-400 mt-4">
