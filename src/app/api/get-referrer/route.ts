@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-interface Params {
-  params: {
-    code: string;
-  };
-}
-
-export async function GET(
-  request: Request,
-  { params }: Params
-) {
+export async function GET(request: Request) {
   try {
-    const { code } = params;
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code');
+
+    if (!code) {
+      return NextResponse.json(
+        { message: 'Referral code is required' },
+        { status: 400 }
+      );
+    }
 
     // Find the user with this referral code
     const referrer = await prisma.user.findUnique({
