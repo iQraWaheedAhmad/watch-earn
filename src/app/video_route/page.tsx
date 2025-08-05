@@ -20,11 +20,13 @@ const Videos = () => {
   const { user, getToken } = useAuth();
 
   const videoUrls = [
-    // youtube videos
+
+        // youtube videos
     "https://youtu.be/DsG7tU630pE?si=rB338lJMR7pVdv1f",
     // "https://www.youtube.com/watch?v=4uJLLev3Ulg",
     // "https://www.youtube.com/watch?v=LXb3EKWsInQ",
     // "https://www.youtube.com/watch?v=ScMzIvxBSi4",
+
     // "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
     // "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
   ];
@@ -151,7 +153,7 @@ const Videos = () => {
     fetchDepositStatus();
   }, [user, getToken]);
 
-  // Update the completeRound function in video_route.tsx
+  // Update the complete round
   const completeRound = async () => {
     if (!currentPlan) {
       toast.error("No active plan found");

@@ -425,7 +425,7 @@ function WithdrawPage() {
               <div className="text-sm text-gray-400">
                 <p className="mb-2">⚠️ Important Notes:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Withdrawals are processed within 24 hours</li>
+                  <li>Withdrawals are processed within 1 to 3 days</li>
                   <li>Minimum withdrawal: 10 {asset}</li>
                   <li>Ensure your wallet address is correct</li>
                   <li>Transaction fees will be deducted from the amount</li>
