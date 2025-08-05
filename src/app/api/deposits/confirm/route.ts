@@ -99,20 +99,23 @@ async function confirmDeposit(request: AuthRequest) {
         const depositCount = await prisma.deposit.count({
           where: {
             userId: result.userId,
-            id: { not: result.deposit.id },
             status: 'approved'
           }
         });
 
-        if (depositCount === 0) {
+        // Only process referral reward for the first deposit
+        if (depositCount === 1) {
           try {
-            // Create a pending referral reward
+            console.log(`[DepositConfirm] Processing referral reward for user ${result.userId} with plan amount ${depositAmount}`);
             await processReferralReward(result.userId);
+            console.log(`[DepositConfirm] Successfully processed referral reward for user ${result.userId}`);
           } catch (error) {
-            console.error("Error creating pending referral reward:", error);
-            // Don't fail the deposit if referral reward creation fails
+            console.error(`[DepositConfirm] Error processing referral reward:`, error);
+            // Don't fail the deposit if referral reward fails
           }
         }
+      } else {
+        console.log(`[DepositConfirm] No referrer found for user ${result.userId}, skipping referral reward`);
       }
     }
 

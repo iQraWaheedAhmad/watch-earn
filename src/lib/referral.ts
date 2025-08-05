@@ -209,7 +209,7 @@ export const processReferralReward = async (
     return await prisma.$transaction(async (tx) => {
       console.log(`[ReferralReward] Starting transaction for user ${referredUserId} referred by ${referrer.id}`);
       
-      // 1. Get the latest deposit for the referred user
+      // 1. Get the latest deposit and plan for the referred user
       const deposit = await tx.deposit.findFirst({
         where: { 
           userId: referredUserId,
@@ -223,22 +223,22 @@ export const processReferralReward = async (
         throw new Error(`[ReferralReward] No approved deposit found for user ${referredUserId}`);
       }
       
-      // Get the referrer's plan amount
-      const referrerPlan = await tx.userPlanProgress.findFirst({
-        where: { userId: referrer.id },
+      // Get the referred user's plan amount
+      const referredUserPlan = await tx.userPlanProgress.findFirst({
+        where: { userId: referredUserId },
         orderBy: { id: 'desc' },
         take: 1
       });
 
-      if (!referrerPlan) {
-        throw new Error(`[ReferralReward] No plan found for referrer ${referrer.id}`);
+      if (!referredUserPlan) {
+        throw new Error(`[ReferralReward] No plan found for referred user ${referredUserId}`);
       }
 
-      const referrerPlanAmount = referrerPlan.planAmount;
-      const rewardAmount = new Prisma.Decimal(PLAN_REWARDS[referrerPlanAmount.toString()] || 0);
+      const referredUserPlanAmount = referredUserPlan.planAmount;
+      const rewardAmount = new Prisma.Decimal(PLAN_REWARDS[referredUserPlanAmount.toString()] || 0);
       
       if (rewardAmount.lte(0)) {
-        throw new Error(`[ReferralReward] Invalid reward amount for plan ${referrerPlanAmount}`);
+        throw new Error(`[ReferralReward] Invalid reward amount for plan ${referredUserPlanAmount}`);
       }
       
       // 2. Create reward record for the referrer only
@@ -247,15 +247,15 @@ export const processReferralReward = async (
           referrerId: referrer.id,
           referredUserId: referredUserId,
           amount: rewardAmount,
-          planAmount: new Prisma.Decimal(referrerPlanAmount),
-          planType: `Referral Bonus ($${referrerPlanAmount} Plan)`,
+          planAmount: new Prisma.Decimal(referredUserPlanAmount),
+          planType: `Referral Bonus ($${referredUserPlanAmount} Plan)`,
           status: "pending", // Set to pending first, will be paid after admin approval
           paidAt: null
         },
       });
       
       // Don't update balance yet, will be done after admin approval
-      console.log(`[ReferralReward] Created pending reward of $${rewardAmount} for referrer ${referrer.id} (plan: $${referrerPlanAmount})`);
+      console.log(`[ReferralReward] Created pending reward of $${rewardAmount} for referrer ${referrer.id} (referred user's plan: $${referredUserPlanAmount})`);
       
       console.log(
         `[ReferralReward] Success! Created pending reward of $${rewardAmount} for referrer ${referrer.id}`
@@ -267,7 +267,7 @@ export const processReferralReward = async (
         rewardId: referrerRewardRecord.id,
         referrerId: referrer.id,
         referredUserId: referredUserId,
-        planAmount: referrerPlanAmount
+        planAmount: referredUserPlanAmount
       };
     });
   } catch (error) {
