@@ -54,19 +54,20 @@ export default function Hero() {
         <p className="font-semibold text-lg text-white">
           "Watch Videos and Start Earning with Minimal Investment!"
         </p>
-        <p className="text-lg text-white max-w-md">
-          Looking for a quick and easy way to make money? Dive into an exciting opportunity where you can:
-          <br />
-          ✔️ <strong>Watch videos online</strong>
-          <br />
-          ✔️ <strong>Earn money effortlessly</strong>
-          <br />
-          ✔️ <strong>Start with low investment</strong>
-          <br />
-          It’s simple, fun, and perfect for beginners. Don't miss out on this chance to grow your income!
-          <br />
-          <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
-        </p>
+      
+  
+<p className="text-gray-300 text-base text-white">
+  💸 Invite 20 people and earn <strong>$50</strong> in bonus profit!
+  <br />
+  💸 Add 50 users and unlock <strong>$70</strong> in rewards!
+  <br />
+  💸 Grow your network to 100 users and get a massive <strong>$150</strong> profit!
+  <br />
+  It’s simple, fun, and perfect for beginners. Don't miss out on this chance to grow your income!
+  <br />
+  <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
+</p>
+
       </div>
 
       {/* Right Side - Moving Image Slider */}
