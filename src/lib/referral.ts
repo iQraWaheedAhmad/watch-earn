@@ -241,7 +241,7 @@ export const processReferralReward = async (
         throw new Error(`[ReferralReward] Invalid reward amount for plan ${referredUserPlanAmount}`);
       }
       
-      // 2. Create reward record for the referrer only
+      // 2. Create reward record for the referrer only (only the person who shared the link gets rewarded)
       const referrerRewardRecord = await tx.referralReward.create({
         data: {
           referrerId: referrer.id,
@@ -258,8 +258,11 @@ export const processReferralReward = async (
       console.log(`[ReferralReward] Created pending reward of $${rewardAmount} for referrer ${referrer.id} (referred user's plan: $${referredUserPlanAmount})`);
       
       console.log(
-        `[ReferralReward] Success! Created pending reward of $${rewardAmount} for referrer ${referrer.id}`
+        `[ReferralReward] Success! Created pending reward of $${rewardAmount} for referrer ${referrer.id} (only referrer gets rewarded)`
       );
+      
+      // Note: Only the referrer (person who shared the link) receives a reward
+      // The referred user does not receive any reward
       
       return { 
         success: true, 

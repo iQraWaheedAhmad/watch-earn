@@ -113,13 +113,10 @@ export async function GET(request: NextRequest) {
 
     // Get referral stats
     const [rewards, referredUsers] = await Promise.all([
-      // Get all rewards where the user is either referrer or referred
+      // Only get rewards where the user is the referrer (not the referred user)
       prisma.referralReward.findMany({
         where: {
-          OR: [
-            { referrerId: userId },
-            { referredUserId: userId }
-          ]
+          referrerId: userId // Only include rewards where user is the referrer
         },
         orderBy: { createdAt: 'desc' },
         include: {
@@ -145,20 +142,14 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    // Use userId directly since it's already a number
-    const userIdNum = userId;
-    
-    // Calculate total earnings (only from paid rewards where user is the referrer)
+    // Calculate total earnings (only from paid rewards)
     const totalEarnings = rewards
-      .filter(reward => 
-        reward.referrerId === userIdNum && 
-        reward.status === 'paid'
-      )
+      .filter(reward => reward.status === 'paid')
       .reduce((sum, reward) => sum + Number(reward.amount), 0);
 
     // Calculate pending rewards
     const pendingRewards = rewards.filter(
-      reward => reward.status === 'pending' && reward.referrerId === userIdNum
+      reward => reward.status === 'pending'
     ).length;
 
     // Get the user's referral code or generate one if it doesn't exist
