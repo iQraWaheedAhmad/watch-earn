@@ -8,16 +8,55 @@ export const GET = requireAuth(async (req: AuthRequest) => {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
     // Get all user's plan progresses
-    const progresses = await prisma.userPlanProgress.findMany({
-      where: { userId: userId },
-      orderBy: { lastRoundDate: "desc" },
-    });
-    // Calculate total profit and check withdrawal eligibility
-    const totalProfit = progresses.reduce((sum, p) => sum + (p.profit || 0), 0);
+    const [progresses, referralRewards] = await Promise.all([
+      prisma.userPlanProgress.findMany({
+        where: { userId: userId },
+        orderBy: { lastRoundDate: "desc" },
+      }),
+      // Get all referral rewards where user is either referrer or referred
+      prisma.referralReward.findMany({
+        where: {
+          OR: [
+            { referrerId: userId },
+            { referredUserId: userId }
+          ],
+          status: 'paid'
+        },
+        select: {
+          id: true,
+          amount: true,
+          planAmount: true,
+          planType: true,
+          status: true,
+          referrerId: true,
+          referredUserId: true,
+          createdAt: true
+        }
+      })
+    ]);
+
+    // Calculate total profit from plan progresses
+    const planProfit = progresses.reduce((sum, p) => sum + (p.profit || 0), 0);
+    
+    // Calculate total profit from referral rewards
+    const referralProfit = referralRewards.reduce((sum, reward) => {
+      // Only count rewards where user is the recipient (either as referrer or referred)
+      if (reward.status === 'paid') {
+        return sum + Number(reward.amount);
+      }
+      return sum;
+    }, 0);
+
+    // Total profit is the sum of plan profit and referral profit
+    const totalProfit = planProfit + referralProfit;
+    
+    // Check withdrawal eligibility (only based on plan progress, not referral rewards)
     const canWithdraw = progresses.some(
       (p) => p.canWithdraw && p.profit > 0 && p.roundCount > 0
     );
+
     return NextResponse.json({
       success: true,
       progresses: progresses.map((p) => ({
@@ -30,6 +69,12 @@ export const GET = requireAuth(async (req: AuthRequest) => {
       })),
       totalProfit,
       canWithdraw,
+      // Include referral rewards for debugging
+      _meta: {
+        planProfit,
+        referralProfit,
+        totalReferralRewards: referralRewards.length
+      }
     });
   } catch (error) {
     console.error("Error in all-progress API:", error);

@@ -5,19 +5,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  async rewrites() {
-    return [
-      // Proxy only login and register requests to backend
-      {
-        source: '/login',
-        destination: 'http://localhost:3001/login',
-      },
-      {
-        source: '/register',
-        destination: 'http://localhost:3001/register',
-      },
-    ];
-  },
+  // Removed localhost rewrites as they're not needed in production
+  // and were causing 404 errors
 
   images: {
     domains: ['localhost'],

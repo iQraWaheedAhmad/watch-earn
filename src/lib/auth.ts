@@ -57,9 +57,24 @@ export const login = async (email: string, password: string): Promise<{ user: Us
 };
 
 // Register user
-export const register = async (name: string, email: string, password: string): Promise<User> => {
-  const response = await axios.post('/api/auth/register', { name, email, password });
-  return response.data.user;
+export const register = async (name: string, email: string, password: string, referralCode?: string): Promise<{ user: User; token: string }> => {
+  const response = await axios.post('/api/auth/register', { 
+    name, 
+    email, 
+    password, 
+    referralCode 
+  });
+  
+  if (response.data.token) {
+    localStorage.setItem('authToken', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    setAuthHeader(response.data.token);
+  }
+  
+  return {
+    user: response.data.user,
+    token: response.data.token
+  };
 };
 
 // Logout user

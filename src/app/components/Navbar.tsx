@@ -379,6 +379,13 @@ export default function Navbar() {
                       </p>
                       <p className="text-sm text-gray-500">{user?.email}</p>
                     </div>
+                    <Link
+                      href="/referral-dashboard"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      💰 Refer a Friend
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 focus:outline-none"
@@ -547,6 +554,13 @@ export default function Navbar() {
                   <p className="text-sm font-medium text-white">{user?.name}</p>
                   <p className="text-sm text-gray-400">{user?.email}</p>
                 </div>
+                <Link
+                  href="/referral-dashboard"
+                  className="block w-full text-left px-2 py-2 text-sm text-white hover:bg-gray-700 rounded"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  💰 Refer a Friend
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-2 py-2 text-sm text-red-400 hover:text-red-300"

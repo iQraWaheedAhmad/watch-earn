@@ -61,7 +61,7 @@ function BinanceStaking() {
 
         <Step title="💸 Step 3: Send USDT" color="border-purple-500">
           <ul className="list-decimal ml-5">
-            <li>Tap "Withdraw" or "Send".</li>
+            <li>Tap &quot;Withdraw&quot; or &quot;Send&quot;.</li>
             <li>Paste address: <code className="bg-gray-100 px-1 rounded text-blue-600 font-mono">{walletAddress}</code></li>
             <li>Enter amount (e.g., 100 USDT).</li>
             <li>Choose <strong>TRC20</strong> network.</li>
@@ -84,7 +84,7 @@ function BinanceStaking() {
         <Step title="⚠️ Important Notes" color="border-yellow-400">
           <ul className="list-disc ml-5 text-sm">
             <li>Only send USDT via <strong>TRC20</strong>.</li>
-            <li>Never share your wallet's seed phrase.</li>
+            <li>Never share your wallet&apos;s seed phrase.</li>
             <li>Withdraw only after 30 days.</li>
             <li>Keep TXID safe for records.</li>
           </ul>
@@ -113,4 +113,3 @@ function BinanceStaking() {
     </>
   );
 }
-8

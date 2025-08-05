@@ -13,7 +13,7 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter(); // Navigation hook
-  const { login, loading, error } = useAuth(); // Use authentication context
+  const { login, loading } = useAuth(); // Use authentication context
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,11 +45,10 @@ const LoginForm = () => {
           router.push("/"); // Regular users go to home page
         }, 1000);
       }
-    } catch (error: any) {
-      console.error(error);
-      setMessage(
-        error.response?.data?.message || "Login failed. Please check your email and password."
-      );
+    } catch (error) {
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your email and password.';
+      setMessage(errorMessage);
     }
   };
 
@@ -97,18 +96,26 @@ const LoginForm = () => {
                 {showPassword ? "🙈" : "👁️"}
               </button>
             </div>
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-indigo-400 hover:text-indigo-300"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
         </form>
 
         {/* Display success or error message */}
@@ -117,7 +124,7 @@ const LoginForm = () => {
         {/* Register Link */}
         <div className="text-sm text-center text-white mt-4">
           <p>
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/registrationfom"
               className="text-indigo-600 hover:text-indigo-700 transition duration-200"

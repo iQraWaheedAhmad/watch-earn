@@ -7,6 +7,7 @@ export interface AuthRequest extends NextRequest {
     id: number;
     email: string;
     name: string;
+    role: 'user' | 'admin';
   };
 }
 
@@ -29,6 +30,7 @@ export async function authenticateUser(request: AuthRequest) {
       id: number;
       email: string;
       name: string;
+      role: 'user' | 'admin';
     };
     
     // Validate session in database
@@ -49,7 +51,7 @@ export async function authenticateUser(request: AuthRequest) {
     request.user = decoded;
     
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
