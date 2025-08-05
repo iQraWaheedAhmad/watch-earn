@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+interface Params {
+  params: {
+    code: string;
+  };
+}
+
 export async function GET(
   request: Request,
-  { params }: { params: { code: string } }
+  { params }: Params
 ) {
   try {
     const { code } = params;
