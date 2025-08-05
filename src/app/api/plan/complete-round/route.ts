@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
+// import { processReferralReward } from "@/lib/referral";
 
 // Plans array (should match frontend)
 const plans = [
@@ -117,6 +118,9 @@ export const POST = requireAuth(async (req: AuthRequest) => {
       },
     });
     console.log("[COMPLETE ROUND API] Updated progress:", updatedProgress);
+    // Process referral reward if this is the first round for this user and plan
+    // (Removed to prevent duplicate rewards. Now handled only on deposit approval.)
+
     // Calculate total profit for all plans for this user
     const allProgresses = await prisma.userPlanProgress.findMany({
       where: { userId: userId },

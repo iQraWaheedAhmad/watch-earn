@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
+import { processReferralReward } from "@/lib/referral";
 
-// This is a simplified version since we don't have actual file storage
-// In a production app, you'd use a service like AWS S3, Cloudinary, etc.
+// Process deposit confirmation and handle balance updates and referral rewards
 async function confirmDeposit(request: AuthRequest) {
   try {
     // User is already authenticated via middleware
@@ -45,37 +45,86 @@ async function confirmDeposit(request: AuthRequest) {
       );
     }
 
-    // Create deposit record
-    const deposit = await prisma.deposit.create({
-      data: {
-        userId: Number(userId),
-        amount: depositAmount,
-        currency,
-        transactionHash,
-        paymentProofUrl, // In a real app, this would be the URL to the uploaded file
-        status: "pending",
-      },
-    });
+    // First, create the deposit and update user data in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create the deposit record
+      const deposit = await tx.deposit.create({
+        data: {
+          userId: Number(userId),
+          amount: depositAmount,
+          currency,
+          transactionHash,
+          paymentProofUrl,
+          status: "approved",
+          confirmedAt: new Date()
+        },
+      });
 
-    // Immediately upsert UserPlanProgress so user can start earning
-    await prisma.userPlanProgress.upsert({
-      where: {
-        userId_planAmount: {
+      // 2. Update user's balance
+      await tx.user.update({
+        where: { id: Number(userId) },
+        data: {
+          balance: { increment: depositAmount },
+          totalEarned: { increment: depositAmount },
+        },
+      });
+
+      // 3. Create or update UserPlanProgress for the user's plan
+      await tx.userPlanProgress.upsert({
+        where: {
+          userId_planAmount: {
+            userId: Number(userId),
+            planAmount: depositAmount,
+          },
+        },
+        update: {},
+        create: {
           userId: Number(userId),
           planAmount: depositAmount,
         },
-      },
-      update: {},
-      create: {
-        userId: Number(userId),
-        planAmount: depositAmount,
-      },
+      });
+
+      return { deposit, userId: Number(userId) };
     });
+
+    // After the transaction is complete, create a pending referral reward if needed
+    if (result) {
+      const user = await prisma.user.findUnique({
+        where: { id: result.userId },
+        select: { referredById: true }
+      });
+
+      if (user?.referredById) {
+        // Check if this is the user's first deposit
+        const depositCount = await prisma.deposit.count({
+          where: {
+            userId: result.userId,
+            id: { not: result.deposit.id },
+            status: 'approved'
+          }
+        });
+
+        if (depositCount === 0) {
+          try {
+            // Create a pending referral reward
+            await processReferralReward(result.userId);
+          } catch (error) {
+            console.error("Error creating pending referral reward:", error);
+            // Don't fail the deposit if referral reward creation fails
+          }
+        }
+      }
+    }
+
+    // Trigger a profit update event to refresh the UI
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('profitUpdated'));
+    }
 
     return NextResponse.json(
       {
-        message: "Deposit confirmation submitted successfully",
-        deposit,
+        message: "Deposit confirmed and processed successfully",
+        deposit: result.deposit,
       },
       { status: 201 }
     );

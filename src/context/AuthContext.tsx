@@ -19,7 +19,7 @@ interface AuthContextType {
   error: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (data: { name: string; email: string; password: string; referralCode?: string }) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   getToken: () => string | null;
@@ -99,16 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Register handler
-  const handleRegister = async (
-    name: string,
-    email: string,
-    password: string
-  ) => {
+  const handleRegister = async (data: { name: string; email: string; password: string; referralCode?: string }) => {
     try {
       setLoading(true);
       setError(null);
-      const user = await register(name, email, password);
+      const { name, email, password, referralCode } = data;
+      const { user } = await register(name, email, password, referralCode);
       setUser(user);
+      // setAuthHeader(token); // This line is commented out because setAuthHeader is not defined in the provided code
     } catch (error: unknown) {
       if (
         error &&

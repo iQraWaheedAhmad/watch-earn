@@ -12,8 +12,20 @@ model User {
   name               String
   email              String             @unique
   password           String
+  resetToken         String?            @map("reset_token")
+  resetTokenExpiry   DateTime?          @map("reset_token_expiry")
+  lastPasswords      String[]           @default([]) @map("last_passwords")
+  passwordLastChanged DateTime?         @map("password_last_changed")
+  referralCode       String?            @unique @map("referral_code") @default(uuid())
+  referredByCode     String?            @map("referred_by_code")
+  referredById       Int?               @map("referred_by_id")
+  balance            Decimal            @default(0) @db.Decimal(10, 2)
+  totalEarned        Decimal            @default(0) @map("total_earned") @db.Decimal(10, 2)
+  referralCount      Int                @default(0) @map("referral_count")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
+  
+  // Relations
   userPlanProgresses UserPlanProgress[]
   deposits           Deposit[]
   fileUploads        FileUpload[]
@@ -21,8 +33,33 @@ model User {
   sessions           Session[]
   stakings           Staking[]
   withdrawals        Withdrawal[]
+  
+  // Referral relations
+  referredBy        User?              @relation("UserReferrals", fields: [referredById], references: [id])
+  referredUsers     User[]             @relation("UserReferrals")
+  referralRewards   ReferralReward[]   @relation("ReferralRewards")
+  referralEarnings  ReferralReward[]   @relation("ReferralEarnings")
 
   @@map("users")
+}
+
+model ReferralReward {
+  id              Int       @id @default(autoincrement())
+  referrerId      Int       @map("referrer_id")
+  referredUserId  Int       @map("referred_user_id")
+  amount          Decimal   @db.Decimal(10, 2)
+  planAmount      Decimal   @map("plan_amount") @db.Decimal(10, 2)
+  planType        String?   @map("plan_type")
+  status          String    @default("pending") // pending, paid
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  referrer        User      @relation("ReferralRewards", fields: [referrerId], references: [id])
+  referredUser    User      @relation("ReferralEarnings", fields: [referredUserId], references: [id])
+
+  @@map("referral_rewards")
 }
 
 model Profile {

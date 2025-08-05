@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MessageSquare, Settings, Users, Database } from "lucide-react";
+import { MessageSquare, Database } from "lucide-react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChatDashboard from "./ChatDashboard";
 

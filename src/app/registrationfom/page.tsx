@@ -1,8 +1,7 @@
 'use client';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Head from 'next/head';
 import { useAuth } from '@/context/AuthContext';
 
 const RegistrationForm = () => {
@@ -13,10 +12,39 @@ const RegistrationForm = () => {
   const [message, setMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [registered, setRegistered] = useState(false);
-  const router = useRouter();
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referrerName, setReferrerName] = useState<string>('');
+  const searchParams = useSearchParams();
   
   // Use authentication context
-  const { register, loading, error } = useAuth();
+  const { register, loading } = useAuth();
+
+  // Get referral code from URL on component mount and fetch referrer details
+  useEffect(() => {
+    const refCode = searchParams?.get('ref');
+    if (refCode) {
+      // Only set if it's a valid 8-character alphanumeric code
+      if (/^[A-Z0-9]{8}$/i.test(refCode)) {
+        setReferralCode(refCode);
+        
+        // Fetch referrer details
+        const fetchReferrer = async () => {
+          try {
+            const response = await fetch(`/api/referrer/${refCode}`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+              setReferrerName(data.data.name);
+            }
+          } catch (error) {
+            console.error('Error fetching referrer details:', error);
+          }
+        };
+        
+        fetchReferrer();
+      }
+    }
+  }, [searchParams]);
 
   // Password Validation Function
   const validatePassword = (password: string): string => {
@@ -41,8 +69,17 @@ const RegistrationForm = () => {
     }
 
     try {
+      // Prepare registration data including referral code if present
+      const registrationData = { name, email, password };
+      
+      // Add referral code to registration data if present
+      if (referralCode) {
+        // @ts-expect-error - Adding referralCode to the registration data
+        registrationData.referralCode = referralCode;
+      }
+
       // Use the register function from auth context
-      await register(name, email, password);
+      await register(registrationData);
       
       setMessage("Registration successful! Click below to go to login.");
       setRegistered(true);
@@ -54,16 +91,28 @@ const RegistrationForm = () => {
 
   return (
     <>
-      <Head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Geist+Mono:wght@100..900&display=swap"
-        />
-      </Head>
       <div className="min-h-screen flex justify-center items-center bg-black py-12 px-4">
         <div className="max-w-md w-full space-y-6 bg-gray-900 p-8 rounded-lg shadow-lg">
           <h2 className="text-3xl font-extrabold text-center text-white">Register</h2>
+          {referralCode && (
+            <div className="bg-blue-900 text-white p-3 rounded-md mb-4 text-sm">
+              {referrerName ? (
+                <span>
+                  You&apos;re joining with <span className="text-yellow-400 font-bold text-base">{referrerName}</span>&apos;s referral code!
+                </span>
+              ) : (
+                <span>You&apos;re joining with a referral code!</span>
+              )}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {referralCode && (
+              <input 
+                type="hidden" 
+                name="referralCode" 
+                value={referralCode} 
+              />
+            )}
             <input 
               type="text" 
               placeholder="Name" 

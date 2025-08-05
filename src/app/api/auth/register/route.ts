@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { processReferral, getOrCreateUserReferralCode } from '@/lib/referral';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, referralCode } = await request.json();
 
     // Validate input
     if (!name || !email || !password) {
@@ -30,24 +31,48 @@ export async function POST(request: NextRequest) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
+    // First, create the user in a simple transaction
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
       },
       select: {
         id: true,
         name: true,
-        email: true
+        email: true,
       }
     });
+
+    // Process referral if code is provided (outside of the main transaction)
+    if (referralCode) {
+      try {
+        // Process referral in the background without blocking the response
+        processReferral(user.id, referralCode).catch(error => {
+          console.error('Background referral processing error:', error);
+        });
+      } catch (referralError) {
+        console.error('Error queuing referral processing:', referralError);
+        // Continue with registration even if referral processing fails
+      }
+    }
+
+    // Generate a referral code for the new user (outside of the main transaction)
+    try {
+      // Generate referral code in the background without blocking the response
+      getOrCreateUserReferralCode(user.id).catch(error => {
+        console.error('Background referral code generation error:', error);
+      });
+    } catch (codeError) {
+      console.error('Error queuing referral code generation:', codeError);
+      // Continue with registration even if referral code generation fails
+    }
 
     return NextResponse.json(
       { 
         message: 'User registered successfully',
-        user
+        user: user
       },
       { status: 201 }
     );
