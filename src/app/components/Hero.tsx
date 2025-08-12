@@ -52,18 +52,22 @@ export default function Hero() {
           </span>
         </h1>
         <p className="font-semibold text-lg text-white">
-          "Watch Videos and Start Earning with Minimal Investment!"
+          &quot;Watch Videos and Start Earning with Minimal Investment!&quot;
         </p>
       
   
-<p className="text-gray-300 text-base text-white">
-  💸 Invite 20 people and earn <strong>$50</strong> in bonus profit!
+<p className="text-gray-300 text-base">
+  💸 For 10 referrals, $100 profit.
   <br />
-  💸 Add 50 users and unlock <strong>$70</strong> in rewards!
+  💸 For 20 referrals, $200 profit.
   <br />
-  💸 Grow your network to 100 users and get a massive <strong>$150</strong> profit!
+  💸 For 30 referrals, $300 profit.
   <br />
-  It’s simple, fun, and perfect for beginners. Don't miss out on this chance to grow your income!
+  💸 For 40 referrals, $400 profit.
+  <br />
+  💸 For 50 referrals, $500 profit.
+  <br />
+  It&apos;s simple, fun, and perfect for beginners. Don&apos;t miss out on this chance to grow your income!
   <br />
   <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
 </p>

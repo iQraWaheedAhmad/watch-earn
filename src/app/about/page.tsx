@@ -46,7 +46,7 @@ export default function AboutPage() {
           <div className="text-center bg-yellow-500 text-white p-8 rounded-lg">
             <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
             <p>
-              At Watch And Earn, our mission is to democratize earning opportunities in the digital age.
+              At , our mission is to democratize earning opportunities in the digital age.
               We believe that everyone should have access to simple and legitimate ways to generate income
               online. By providing a platform where users can earn by watching videos, we aim to make
               earning accessible to all, regardless of technical expertise or prior experience.
