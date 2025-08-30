@@ -54,7 +54,7 @@ async function confirmDeposit(request: AuthRequest) {
           currency,
           transactionHash,
           paymentProofUrl,
-          status: "approved",
+          status: "pending",
           confirmedAt: new Date()
         },
       });
