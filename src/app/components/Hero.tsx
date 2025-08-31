@@ -55,7 +55,7 @@ export default function Hero() {
           &quot;Watch Videos and Start Earning with Minimal Investment!&quot;
         </p>
         <div className="text-lg text-white max-w-md space-y-4">
-          <ul className="list-disc list-inside space-y-1 marker:text-yellow-400">
+          <ul className="list-none space-y-1 pl-0">
             <li>💸 For 10 referrals, $100 profit.</li>
             <li>💸 For 20 referrals, $200 profit.</li>
             <li>💸 For 30 referrals, $300 profit.</li>
