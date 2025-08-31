@@ -14,11 +14,11 @@ export const GET = requireAuth(async (req: AuthRequest) => {
       where: { userId: userId },
       orderBy: { lastRoundDate: "desc" },
     });
-    // Get all referral rewards where user is the referrer only (exclude referred user)
+    // Get referral rewards where user is the referrer only (paid only)
     const referralRewards = await prisma.referralReward.findMany({
       where: {
         referrerId: userId,
-        status: { in: ['pending', 'paid'] },
+        status: 'paid',
       },
       select: {
         id: true,
@@ -69,14 +69,8 @@ export const GET = requireAuth(async (req: AuthRequest) => {
     // Calculate total profit from plan progresses
     const planProfit = progresses.reduce((sum, p) => sum + (p.profit || 0), 0);
     
-    // Calculate totals from referral rewards (referrer only)
-    const referralPaid = referralRewards
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + Number(r.amount), 0);
-    const referralPending = referralRewards
-      .filter(r => r.status === 'pending')
-      .reduce((sum, r) => sum + Number(r.amount), 0);
-    const referralProfit = referralPaid + referralPending;
+    // Calculate total from referral rewards (referrer only, paid)
+    const referralProfit = referralRewards.reduce((sum, r) => sum + Number(r.amount), 0);
 
     // Total profit is the sum of plan profit and referral profit
     const totalProfit = planProfit + referralProfit;

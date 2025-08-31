@@ -48,7 +48,7 @@ function DepositConfirmPage() {
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <p className="text-gray-400 text-sm">Estimated Processing Time</p>
-              <p className="text-md font-medium">Up to 24 hours</p>
+              <p className="text-md font-medium">Up to 1 to 3 days</p>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
-// Referral rewards are created on deposit SUBMIT as pending. No auto-approve here.
+import { processReferralReward, approveReferralReward } from "@/lib/referral";
 
 // Process deposit confirmation and handle balance updates and referral rewards
 async function confirmDeposit(request: AuthRequest) {
@@ -103,8 +103,32 @@ async function confirmDeposit(request: AuthRequest) {
       return { deposit, userId: Number(userId) };
     });
 
-    // After the transaction: do not create or approve referral rewards here.
-    // Pending referral reward is already created at deposit submission time.
+    // After the transaction: simple flow — on first confirmed deposit, create and auto-pay referrer reward
+    if (result) {
+      const user = await prisma.user.findUnique({
+        where: { id: result.userId },
+        select: { referredById: true }
+      });
+
+      if (user?.referredById) {
+        // Check count of confirmed deposits for this user
+        const depositCount = await prisma.deposit.count({
+          where: { userId: result.userId, status: 'confirmed' }
+        });
+
+        if (depositCount === 1) {
+          try {
+            const rewardRes = await processReferralReward(result.userId);
+            if (rewardRes && 'rewardId' in rewardRes && rewardRes.rewardId) {
+              await approveReferralReward(rewardRes.rewardId as number);
+            }
+          } catch (err) {
+            console.error('[DepositConfirm] Referral payout failed:', err);
+            // Do not fail confirmation if referral payout fails
+          }
+        }
+      }
+    }
 
     // Trigger a profit update event to refresh the UI
     if (typeof window !== 'undefined') {

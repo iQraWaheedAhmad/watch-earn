@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
-import { PLAN_REWARDS } from "@/lib/referral";
-import { Prisma } from "@prisma/client";
 
 // Submit a deposit: creates a pending deposit record only
 async function submitDeposit(request: AuthRequest) {
@@ -38,57 +36,20 @@ async function submitDeposit(request: AuthRequest) {
       );
     }
 
-    // Create deposit and (if applicable) pending referral reward in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create pending deposit
-      const deposit = await tx.deposit.create({
-        data: {
-          userId: Number(userId),
-          amount: depositAmount,
-          currency,
-          transactionHash,
-          paymentProofUrl,
-          status: "pending",
-        },
-      });
-
-      // If user was referred, and no reward exists yet for this referrer+referredUser, create a pending reward now
-      const user = await tx.user.findUnique({
-        where: { id: Number(userId) },
-        select: { referredById: true },
-      });
-
-      if (user?.referredById) {
-        const existingReward = await tx.referralReward.findFirst({
-          where: {
-            referrerId: user.referredById,
-            referredUserId: Number(userId),
-          },
-        });
-
-        if (!existingReward) {
-          const rewardAmount = PLAN_REWARDS[String(Math.trunc(depositAmount))] || 0;
-          if (rewardAmount > 0) {
-            await tx.referralReward.create({
-              data: {
-                referrerId: user.referredById,
-                referredUserId: Number(userId),
-                amount: new Prisma.Decimal(rewardAmount),
-                planAmount: new Prisma.Decimal(Math.trunc(depositAmount)),
-                planType: `Referral Bonus ($${Math.trunc(depositAmount)} Plan)`,
-                status: "pending",
-                paidAt: null,
-              },
-            });
-          }
-        }
-      }
-
-      return { deposit };
+    // Create pending deposit only
+    const deposit = await prisma.deposit.create({
+      data: {
+        userId: Number(userId),
+        amount: depositAmount,
+        currency,
+        transactionHash,
+        paymentProofUrl,
+        status: "pending",
+      },
     });
 
     return NextResponse.json(
-      { message: "Deposit submitted and pending confirmation", deposit: result.deposit },
+      { message: "Deposit submitted and pending confirmation", deposit },
       { status: 201 }
     );
   } catch (error) {
