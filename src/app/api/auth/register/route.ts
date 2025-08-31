@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { getOrCreateUserReferralCode } from '@/lib/referral';
+import { processReferral, getOrCreateUserReferralCode } from '@/lib/referral';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,35 +45,12 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Set referredBy relationship if referral code is provided (no reward processing here)
+    // Process referral if code is provided (synchronously to avoid race conditions)
     if (referralCode) {
       try {
-        // Find the referrer by their code
-        const referrer = await prisma.user.findFirst({
-          where: {
-            referralCode: referralCode.toUpperCase(),
-            id: { not: user.id } // Prevent self-referral
-          },
-          select: { id: true }
-        });
-
-        if (referrer) {
-          // Just set the referredBy relationship without any reward processing
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              referredByCode: referralCode.toUpperCase(),
-              referredById: referrer.id,
-            },
-          });
-          
-          // Just log the referral, no reward is given at this point
-          console.log(`[Register] User ${user.id} was referred by ${referrer.id}`);
-        } else {
-          console.log(`[Register] Invalid referral code: ${referralCode}`);
-        }
+        await processReferral(user.id, referralCode);
       } catch (referralError) {
-        console.error('Error processing referral:', referralError);
+        console.error('Referral processing error during registration:', referralError);
         // Continue with registration even if referral processing fails
       }
     }

@@ -149,7 +149,7 @@ export const processReferral = async (
 };
 
 // Plan-specific reward amounts (should match MoreInfo component)
-const PLAN_REWARDS: Record<string, number> = {
+export const PLAN_REWARDS: Record<string, number> = {
   "50": 2,    // $2 for $50 plan
   "100": 4,   // $4 for $100 plan
   "150": 6,   // $6 for $150 plan
@@ -213,14 +213,14 @@ export const processReferralReward = async (
       const deposit = await tx.deposit.findFirst({
         where: { 
           userId: referredUserId,
-          status: 'approved'
-        },
+          status: 'confirmed'
+        },  
         orderBy: { id: 'desc' },
         take: 1
       });
       
       if (!deposit) {
-        throw new Error(`[ReferralReward] No approved deposit found for user ${referredUserId}`);
+        throw new Error(`[ReferralReward] No confirmed deposit found for user ${referredUserId}`);
       }
       
       // Get the referred user's plan amount
@@ -241,7 +241,7 @@ export const processReferralReward = async (
         throw new Error(`[ReferralReward] Invalid reward amount for plan ${referredUserPlanAmount}`);
       }
       
-      // 2. Create reward record for the referrer only (only the person who shared the link gets rewarded)
+      // 2. Create reward record for the referrer only
       const referrerRewardRecord = await tx.referralReward.create({
         data: {
           referrerId: referrer.id,
@@ -258,11 +258,8 @@ export const processReferralReward = async (
       console.log(`[ReferralReward] Created pending reward of $${rewardAmount} for referrer ${referrer.id} (referred user's plan: $${referredUserPlanAmount})`);
       
       console.log(
-        `[ReferralReward] Success! Created pending reward of $${rewardAmount} for referrer ${referrer.id} (only referrer gets rewarded)`
+        `[ReferralReward] Success! Created pending reward of $${rewardAmount} for referrer ${referrer.id}`
       );
-      
-      // Note: Only the referrer (person who shared the link) receives a reward
-      // The referred user does not receive any reward
       
       return { 
         success: true, 

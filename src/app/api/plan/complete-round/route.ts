@@ -36,11 +36,11 @@ export const POST = requireAuth(async (req: AuthRequest) => {
     if (!plan) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
-    // Check if user has an active deposit for this plan
+    // Check if user has an active (confirmed) deposit for this plan
     const activeDeposit = await prisma.deposit.findFirst({
       where: {
         userId: userId,
-        status: { in: ["pending", "confirmed"] },
+        status: { in: ["confirmed"] },
         amount: {
           gte: planAmount,
         },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
+// Referral rewards are created on deposit SUBMIT as pending. No auto-approve here.
 
 // Process deposit confirmation and handle balance updates and referral rewards
 async function confirmDeposit(request: AuthRequest) {
@@ -44,22 +45,38 @@ async function confirmDeposit(request: AuthRequest) {
       );
     }
 
-    // 1. First, complete the deposit transaction
-    const depositResult = await prisma.$transaction(async (tx) => {
-      // Create the deposit record
-      const deposit = await tx.deposit.create({
-        data: {
+    // First, confirm the existing pending deposit and update user data in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Find the pending deposit for this user and transaction
+      const pending = await tx.deposit.findFirst({
+        where: {
           userId: Number(userId),
-          amount: depositAmount,
-          currency,
+          status: 'pending',
           transactionHash,
-          paymentProofUrl,
-          status: "approved",
-          confirmedAt: new Date()
         },
       });
 
-      // Update user's balance
+      if (!pending) {
+        throw new Error('Pending deposit not found for this transaction');
+      }
+
+      // Validate amount and currency match the submitted values
+      if (pending.amount !== depositAmount || pending.currency !== currency) {
+        throw new Error('Submitted amount/currency does not match the pending deposit');
+      }
+
+      // 2. Update the deposit record to confirmed
+      const deposit = await tx.deposit.update({
+        where: { id: pending.id },
+        data: {
+          status: 'confirmed',
+          confirmedAt: new Date(),
+          // in case we want to overwrite/ensure proof exists
+          paymentProofUrl: paymentProofUrl || pending.paymentProofUrl || '',
+        },
+      });
+
+      // 3. Update user's balance
       await tx.user.update({
         where: { id: Number(userId) },
         data: {
@@ -68,7 +85,7 @@ async function confirmDeposit(request: AuthRequest) {
         },
       });
 
-      // Create or update UserPlanProgress for the user's plan
+      // 4. Create or update UserPlanProgress for the user's plan
       await tx.userPlanProgress.upsert({
         where: {
           userId_planAmount: {
@@ -83,94 +100,11 @@ async function confirmDeposit(request: AuthRequest) {
         },
       });
 
-      return { deposit };
-    }, {
-      // Increase transaction timeout to 10 seconds
-      maxWait: 10000,
-      timeout: 10000
+      return { deposit, userId: Number(userId) };
     });
 
-    // 2. After deposit is successful, handle referral reward in a separate transaction
-    let referralReward = null;
-    
-    try {
-      // Check if this user was referred by someone
-      const user = await prisma.user.findUnique({
-        where: { id: Number(userId) },
-        select: { referredById: true }
-      });
-
-      if (user?.referredById) {
-        // Check if this is the user's first approved deposit
-        const depositCount = await prisma.deposit.count({
-          where: {
-            userId: Number(userId),
-            status: 'approved',
-            id: { not: depositResult.deposit.id } // Exclude current deposit from count
-          }
-        });
-
-        // Only process referral reward for the first deposit
-        if (depositCount === 0) {
-          console.log(`[DepositConfirm] Processing referral reward for user ${userId} with plan amount ${depositAmount}`);
-          
-          // Create referral reward in a separate transaction
-          referralReward = await prisma.$transaction(async (tx) => {
-            // Get the referrer's details
-            const referrer = await tx.user.findUnique({
-              where: { id: user.referredById },
-              select: { id: true, email: true }
-            });
-            
-            if (!referrer) {
-              console.log(`[DepositConfirm] Referrer not found for ID: ${user.referredById}`);
-              return null;
-            }
-            
-            // Create pending referral reward
-            return await tx.referralReward.create({
-              data: {
-                referrerId: referrer.id,
-                referredUserId: Number(userId),
-                amount: depositAmount * 0.04, // 4% of the deposit amount
-                planAmount: depositAmount,
-                planType: `Referral Bonus ($${depositAmount} Plan)`,
-                status: "pending",
-                paidAt: null
-              },
-            });
-          }, {
-            // Set a separate timeout for the referral reward transaction
-            maxWait: 10000,
-            timeout: 10000
-          });
-          
-          if (referralReward) {
-            console.log(`[DepositConfirm] Created pending referral reward of $${referralReward.amount} for referrer ${referralReward.referrerId}`);
-          } else {
-            console.log('[DepositConfirm] No referral reward created');
-          }
-        } else {
-          console.log(`[DepositConfirm] Not user's first deposit, skipping referral reward`);
-        }
-      } else {
-        console.log(`[DepositConfirm] No referrer found for user ${userId}, skipping referral reward`);
-      }
-    } catch (error) {
-      console.error('[DepositConfirm] Error processing referral reward:', error);
-      // Don't fail the deposit if referral reward processing fails
-    }
-    
-    const result = {
-      deposit: depositResult.deposit,
-      userId: Number(userId),
-      referralReward: referralReward ? {
-        id: referralReward.id,
-        amount: referralReward.amount,
-        referrerId: referralReward.referrerId,
-        status: referralReward.status
-      } : null
-    };
+    // After the transaction: do not create or approve referral rewards here.
+    // Pending referral reward is already created at deposit submission time.
 
     // Trigger a profit update event to refresh the UI
     if (typeof window !== 'undefined') {

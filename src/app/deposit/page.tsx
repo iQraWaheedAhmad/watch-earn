@@ -180,8 +180,8 @@ function DepositPage() {
 
       const { fileUrl } = await uploadRes.json();
 
-      // Then submit the deposit confirmation
-      const res = await fetch("/api/deposits/confirm", {
+      // Then submit the deposit (pending)
+      const res = await fetch("/api/deposits/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -198,7 +198,7 @@ function DepositPage() {
       const data = await res.json();
 
       if (!res.ok)
-        throw new Error(data.message || "Deposit confirmation failed");
+        throw new Error(data.message || "Deposit submission failed");
 
       // Redirect to confirm page with deposit details
       router.push(
@@ -208,7 +208,7 @@ function DepositPage() {
       setAmount("");
       setPaymentProof(null);
       // Debug log for deposit API response
-      console.log("Deposit API response:", data);
+      console.log("Deposit submit API response:", data);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -251,11 +251,11 @@ function DepositPage() {
   // Get status badge based on deposit status
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case "confirm":
+      case "confirmed":
         return (
           <span className="flex items-center text-green-400 text-sm">
             <CheckSquare className="w-4 h-4 mr-1" />
-            Confirm
+            Confirmed
           </span>
         );
       case "pending":
@@ -265,11 +265,11 @@ function DepositPage() {
             Pending
           </span>
         );
-      case "reject":
+      case "rejected":
         return (
           <span className="flex items-center text-red-400 text-sm">
             <XCircle className="w-4 h-4 mr-1" />
-            Reject
+            Rejected
           </span>
         );
       default:
