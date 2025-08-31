@@ -54,18 +54,20 @@ export default function Hero() {
         <p className="font-semibold text-lg text-white">
           &quot;Watch Videos and Start Earning with Minimal Investment!&quot;
         </p>
-        <p className="text-lg text-white max-w-md">
-          
-          <br />
-          💸 For 10 referrals, $100 profit.
-💸 For 20 referrals, $200 profit.
-💸 For 30 referrals, $300 profit.
-💸 For 40 referrals, $400 profit.
-💸 For 50 referrals, $500 profit.
-          It’s simple, fun, and perfect for beginners. Don&apos;t miss out on this chance to grow your income!
-          <br />
-          <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
-        </p>
+        <div className="text-lg text-white max-w-md space-y-4">
+          <ul className="list-disc list-inside space-y-1 marker:text-yellow-400">
+            <li>💸 For 10 referrals, $100 profit.</li>
+            <li>💸 For 20 referrals, $200 profit.</li>
+            <li>💸 For 30 referrals, $300 profit.</li>
+            <li>💸 For 40 referrals, $400 profit.</li>
+            <li>💸 For 50 referrals, $500 profit.</li>
+          </ul>
+          <p>
+            It’s simple, fun, and perfect for beginners. Don&apos;t miss out on this chance to grow your income!
+            <br />
+            <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
+          </p>
+        </div>
       </div>
 
       {/* Right Side - Moving Image Slider */}
