@@ -163,9 +163,18 @@ export const PLAN_REWARDS: Record<string, number> = {
 
 // Instantly pay out referral rewards for both users
 
+export type ReferralRewardResult = {
+  success: true;
+  rewardAmount: Prisma.Decimal;
+  rewardId: number;
+  referrerId: number;
+  referredUserId: number;
+  planAmount: number;
+};
+
 export const processReferralReward = async (
   referredUserId: number
-) => {
+): Promise<ReferralRewardResult | null> => {
   try {
     // Get the referred user with their referrer info and plan details
     const referredUser = await prisma.user.findUnique({
@@ -189,38 +198,53 @@ export const processReferralReward = async (
 
     const referrer = referredUser.referredBy;
 
-    // Check if this specific referred user has already received a reward from this referrer
-    const existingReward = await prisma.referralReward.findFirst({
+    // Check existing reward for this referrer + referred user
+    const existingAny = await prisma.referralReward.findFirst({
       where: {
         referredUserId: referredUserId,
         referrerId: referrer.id,
-        status: 'paid'
       },
+      orderBy: { createdAt: 'desc' }
     });
-    
-    if (existingReward) {
+
+    if (existingAny) {
+      if (existingAny.status === 'paid') {
+        console.log(
+          `[ReferralReward] Already paid for referred user ${referredUserId} by referrer ${referrer.id}`
+        );
+        return null;
+      }
+      // Pending exists — reuse it so caller can approve
       console.log(
-        `[ReferralReward] User ${referredUserId} has already been rewarded by referrer ${referrer.id}`
+        `[ReferralReward] Pending reward already exists (id=${existingAny.id}) for referrer ${referrer.id}, referred user ${referredUserId}`
       );
-      return null;
+      return {
+        success: true,
+        rewardAmount: existingAny.amount,
+        rewardId: existingAny.id,
+        referrerId: referrer.id,
+        referredUserId,
+        planAmount: Number(existingAny.planAmount)
+      };
     }
 
     // Use a transaction to ensure data consistency
     return await prisma.$transaction(async (tx) => {
       console.log(`[ReferralReward] Starting transaction for user ${referredUserId} referred by ${referrer.id}`);
       
-      // 1. Get the latest deposit and plan for the referred user
+      // 1. Ensure user has at least one confirmed deposit
       const deposit = await tx.deposit.findFirst({
         where: { 
           userId: referredUserId,
           status: 'confirmed'
         },  
-        orderBy: { id: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: 1
       });
       
       if (!deposit) {
-        throw new Error(`[ReferralReward] No confirmed deposit found for user ${referredUserId}`);
+        console.log(`[ReferralReward] No confirmed deposit found for user ${referredUserId}`);
+        return null;
       }
       
       // Get the referred user's plan amount

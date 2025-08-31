@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthRequest } from "../../auth/middleware";
+import type { ReferralReward } from "@prisma/client";
 import { processReferralReward, approveReferralReward } from "@/lib/referral";
 
 // Process deposit confirmation and handle balance updates and referral rewards
@@ -103,7 +104,8 @@ async function confirmDeposit(request: AuthRequest) {
       return { deposit, userId: Number(userId) };
     });
 
-    // After the transaction: simple flow — on first confirmed deposit, create and auto-pay referrer reward
+    // After the transaction: simple flow — create and auto-pay referrer reward
+    let reward: ReferralReward | null = null;
     if (result) {
       const user = await prisma.user.findUnique({
         where: { id: result.userId },
@@ -111,21 +113,14 @@ async function confirmDeposit(request: AuthRequest) {
       });
 
       if (user?.referredById) {
-        // Check count of confirmed deposits for this user
-        const depositCount = await prisma.deposit.count({
-          where: { userId: result.userId, status: 'confirmed' }
-        });
-
-        if (depositCount === 1) {
-          try {
-            const rewardRes = await processReferralReward(result.userId);
-            if (rewardRes && 'rewardId' in rewardRes && rewardRes.rewardId) {
-              await approveReferralReward(rewardRes.rewardId as number);
-            }
-          } catch (err) {
-            console.error('[DepositConfirm] Referral payout failed:', err);
-            // Do not fail confirmation if referral payout fails
+        try {
+          const rewardRes = await processReferralReward(result.userId);
+          if (rewardRes && 'rewardId' in rewardRes && rewardRes.rewardId) {
+            reward = await approveReferralReward(rewardRes.rewardId as number);
           }
+        } catch (err) {
+          console.error('[DepositConfirm] Referral payout failed:', err);
+          // Do not fail confirmation if referral payout fails
         }
       }
     }
@@ -139,6 +134,7 @@ async function confirmDeposit(request: AuthRequest) {
       {
         message: "Deposit confirmed and processed successfully",
         deposit: result.deposit,
+        reward
       },
       { status: 201 }
     );
