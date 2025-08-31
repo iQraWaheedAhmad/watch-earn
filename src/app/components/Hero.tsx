@@ -52,18 +52,17 @@ export default function Hero() {
           </span>
         </h1>
         <p className="font-semibold text-lg text-white">
-          "Watch Videos and Start Earning with Minimal Investment!"
+          &quot;Watch Videos and Start Earning with Minimal Investment!&quot;
         </p>
         <p className="text-lg text-white max-w-md">
-          Looking for a quick and easy way to make money? Dive into an exciting opportunity where you can:
+          
           <br />
-          ✔️ <strong>Watch videos online</strong>
-          <br />
-          ✔️ <strong>Earn money effortlessly</strong>
-          <br />
-          ✔️ <strong>Start with low investment</strong>
-          <br />
-          It’s simple, fun, and perfect for beginners. Don't miss out on this chance to grow your income!
+          💸 For 10 referrals, $100 profit.
+💸 For 20 referrals, $200 profit.
+💸 For 30 referrals, $300 profit.
+💸 For 40 referrals, $400 profit.
+💸 For 50 referrals, $500 profit.
+          It’s simple, fun, and perfect for beginners. Don&apos;t miss out on this chance to grow your income!
           <br />
           <strong>Get started today and see the difference.</strong> Your journey to earning begins now! 🚀
         </p>
