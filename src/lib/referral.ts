@@ -310,17 +310,12 @@ export const getReferralStats = async (userId: number) => {
     },
   });
 
-  // Get all referral rewards where the user is the referrer (earnings from referrals)
+  // Get referral earnings and rewards where the user is the referrer (earnings from referrals)
   const [referralEarnings, referralRewards, referredUsers] = await Promise.all([
     prisma.referralReward.aggregate({
       where: {
         referrerId: userId,
         status: "paid",
-        // Only count rewards where the planType is not 'Referred User Bonus'
-        // to avoid counting the bonus given to referred users
-        NOT: {
-          planType: "Referred User Bonus",
-        },
       },
       _sum: {
         amount: true,
@@ -328,7 +323,7 @@ export const getReferralStats = async (userId: number) => {
     }),
     prisma.referralReward.findMany({
       where: {
-        OR: [{ referrerId: userId }, { referredUserId: userId }],
+        referrerId: userId,
       },
       orderBy: { createdAt: "desc" },
       include: {

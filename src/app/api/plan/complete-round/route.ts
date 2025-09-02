@@ -98,24 +98,33 @@ export const POST = requireAuth(async (req: AuthRequest) => {
     }
     // Calculate profit for this round
     const profitForThisRound = plan.profitUSD;
-    // Update progress with new round
-    const updatedProgress = await prisma.userPlanProgress.update({
-      where: {
-        userId_planAmount: {
-          userId: userId,
-          planAmount,
+    // Update progress and credit user's balance atomically
+    const { updatedProgress, updatedUser } = await prisma.$transaction(async (tx) => {
+      const progressUpdate = await tx.userPlanProgress.update({
+        where: {
+          userId_planAmount: {
+            userId: userId,
+            planAmount,
+          },
         },
-      },
-      data: {
-        profit: {
-          increment: profitForThisRound,
+        data: {
+          profit: { increment: profitForThisRound },
+          roundCount: { increment: 1 },
+          lastRoundDate: now,
+          canWithdraw: true, // Always set to true after completing a round
         },
-        roundCount: {
-          increment: 1,
+      });
+
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: {
+          balance: { increment: profitForThisRound },
+          totalEarned: { increment: profitForThisRound },
         },
-        lastRoundDate: now,
-        canWithdraw: true, // Always set to true after completing a round
-      },
+        select: { balance: true, totalEarned: true },
+      });
+
+      return { updatedProgress: progressUpdate, updatedUser: userUpdate };
     });
     console.log("[COMPLETE ROUND API] Updated progress:", updatedProgress);
     // Process referral reward if this is the first round for this user and plan
@@ -139,6 +148,7 @@ export const POST = requireAuth(async (req: AuthRequest) => {
       },
       profitEarned: profitForThisRound,
       totalProfit,
+      balance: Number(updatedUser.balance),
       canWithdrawNow: true,
     };
     console.log("[COMPLETE ROUND API] Response:", responseObj);

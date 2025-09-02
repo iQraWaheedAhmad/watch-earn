@@ -159,7 +159,7 @@ function WithdrawPage() {
     }
   }, [searchParams, fetchWithdrawalHistory]);
 
-  // Fetch available balance
+  // Fetch available balance (prefer balance for display; fallback to totalProfit)
   useEffect(() => {
     const fetchBalance = async () => {
       try {
@@ -167,8 +167,20 @@ function WithdrawPage() {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         const data = await res.json();
-        if (res.ok && data.totalProfit !== undefined) {
-          setAvailableBalance(data.totalProfit);
+        if (res.ok) {
+          const balanceVal = data.balance !== undefined ? Number(data.balance) : undefined;
+          const totalProfitVal = data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
+          // Prefer balance so UI matches Navbar and reflects deductions immediately
+          if (balanceVal !== undefined) {
+            setAvailableBalance(balanceVal);
+          } else if (totalProfitVal !== undefined) {
+            setAvailableBalance(totalProfitVal);
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('profitUpdated', { detail: { balance: balanceVal, totalProfit: totalProfitVal } })
+            );
+          }
         }
       } catch {}
     };
@@ -185,8 +197,19 @@ function WithdrawPage() {
             headers: { Authorization: `Bearer ${getToken()}` },
           });
           const data = await res.json();
-          if (res.ok && data.totalProfit !== undefined) {
-            setAvailableBalance(data.totalProfit);
+          if (res.ok) {
+            const balanceVal = data.balance !== undefined ? Number(data.balance) : undefined;
+            const totalProfitVal = data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
+            if (balanceVal !== undefined) {
+              setAvailableBalance(balanceVal);
+            } else if (totalProfitVal !== undefined) {
+              setAvailableBalance(totalProfitVal);
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('profitUpdated', { detail: { balance: balanceVal, totalProfit: totalProfitVal } })
+              );
+            }
           }
         } catch {}
       };
@@ -194,6 +217,82 @@ function WithdrawPage() {
       fetchWithdrawalHistory();
     }
   }, [message, getToken, fetchWithdrawalHistory]);
+
+  // Live update when global profit/balance is updated elsewhere
+  useEffect(() => {
+    const onProfitUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const balanceVal =
+        detail.balance !== undefined ? Number(detail.balance) : undefined;
+      const totalProfitVal =
+        detail.totalProfit !== undefined ? Number(detail.totalProfit) : undefined;
+      if (balanceVal !== undefined) setAvailableBalance(balanceVal);
+      else if (totalProfitVal !== undefined) setAvailableBalance(totalProfitVal);
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("profitUpdated", onProfitUpdated as EventListener);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(
+          "profitUpdated",
+          onProfitUpdated as EventListener
+        );
+      }
+    };
+  }, []);
+
+  // Proactively refresh on focus/visibility change and with light polling
+  useEffect(() => {
+    const refetch = async () => {
+      try {
+        const res = await fetch("/api/plan/all-progress", {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const balanceVal =
+            data.balance !== undefined ? Number(data.balance) : undefined;
+          const totalProfitVal =
+            data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
+          if (totalProfitVal !== undefined) setAvailableBalance(totalProfitVal);
+          else if (balanceVal !== undefined) setAvailableBalance(balanceVal);
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("profitUpdated", {
+                detail: { totalProfit: totalProfitVal, balance: balanceVal },
+              })
+            );
+          }
+        }
+      } catch {}
+      // Also keep history fresh
+      fetchWithdrawalHistory();
+    };
+
+    // On focus and when tab becomes visible
+    const onFocus = () => refetch();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refetch();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", onFocus);
+      document.addEventListener("visibilitychange", onVisibility);
+    }
+
+    // Light polling every 30s
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000);
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", onFocus);
+        document.removeEventListener("visibilitychange", onVisibility);
+      }
+      clearInterval(interval);
+    };
+  }, [getToken, fetchWithdrawalHistory]);
 
   // Validate amount on change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,9 +450,7 @@ function WithdrawPage() {
                 min="0"
                 step="0.01"
               />
-              <p className="text-xs text-gray-400 mb-2">
-                Available Balance: ${availableBalance}
-              </p>
+              <p className="text-xs text-gray-400 mb-2">Available to Withdraw: ${availableBalance}</p>
 
               {message && (
                 <div className="mb-4 p-3 bg-green-900/50 border border-green-700 rounded-lg">

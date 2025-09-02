@@ -9,6 +9,12 @@ export const GET = requireAuth(async (req: AuthRequest) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
+    // Fetch user's current balance (includes paid referral rewards and prior withdrawals)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { balance: true },
+    });
+    
     // Get all user's plan progresses
     let progresses = await prisma.userPlanProgress.findMany({
       where: { userId: userId },
@@ -17,8 +23,8 @@ export const GET = requireAuth(async (req: AuthRequest) => {
     // Get referral rewards where user is the referrer only (paid only)
     const referralRewards = await prisma.referralReward.findMany({
       where: {
-        referrerId: userId,
         status: 'paid',
+        referrerId: userId,
       },
       select: {
         id: true,
@@ -91,6 +97,7 @@ export const GET = requireAuth(async (req: AuthRequest) => {
         lastRoundDate: p.lastRoundDate,
       })),
       totalProfit,
+      balance: Number(user?.balance ?? 0),
       canWithdraw,
       // Include referral rewards for debugging
       _meta: {

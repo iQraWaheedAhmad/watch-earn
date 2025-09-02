@@ -187,10 +187,13 @@ const Videos = () => {
       setCurrentPlan(data.progress);
       setRoundCompleted(true);
       toast.success(`Earned $${data.profitEarned} from watching videos!`);
-      // Dispatch event with the new total profit
+      // Dispatch event with the new balance and total profit (if present)
       window.dispatchEvent(
         new CustomEvent("profitUpdated", {
-          detail: { totalProfit: data.totalProfit },
+          detail: {
+            ...(data.balance !== undefined ? { balance: Number(data.balance) } : {}),
+            ...(data.totalProfit !== undefined ? { totalProfit: data.totalProfit } : {}),
+          },
         })
       );
       // Force refetch of all-progress to update Navbar and Withdraw

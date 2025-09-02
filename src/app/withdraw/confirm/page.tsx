@@ -69,6 +69,27 @@ function WithdrawConfirmPage() {
           data.message || "Withdrawal request submitted successfully!"
         );
       }, 500);
+
+      // Immediately refresh global balance/profit values for Navbar and other listeners
+      try {
+        const progressRes = await fetch("/api/plan/all-progress", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const progressData = await progressRes.json();
+        if (progressRes.ok) {
+          const balanceVal = progressData.balance !== undefined ? Number(progressData.balance) : undefined;
+          const totalProfitVal = progressData.totalProfit !== undefined ? Number(progressData.totalProfit) : undefined;
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("profitUpdated", {
+                detail: { totalProfit: totalProfitVal, balance: balanceVal },
+              })
+            );
+          }
+        }
+      } catch {
+        // Non-fatal: UI still shows local success, but navbar might update on next poll
+      }
     } catch (err: unknown) {
       let errorMsg = "An unknown error occurred";
       if (

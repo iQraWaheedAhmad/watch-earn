@@ -16,7 +16,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, isAuthenticated, logout, getToken } = useAuth();
-  const [profit, setProfit] = useState<number | null>(null);
+  const [profit, setProfit] = useState<number | null>(null); // now used for balance display
   const [profitLoading, setProfitLoading] = useState(false);
   const [depositStatus, setDepositStatus] = useState<
     null | "pending" | "confirmed" | "rejected"
@@ -35,7 +35,7 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  // Fetch user profit
+  // Fetch user balance (prefer balance for display; fallback to totalProfit)
   const fetchProfit = async () => {
     if (!isAuthenticated || !getToken()) return;
 
@@ -52,7 +52,8 @@ export default function Navbar() {
       const data = await res.json();
       console.log("Fetched profit data:", data); // Debug line
       if (res.ok && data.success) {
-        setProfit(data.totalProfit || 0);
+        const value = (data.balance !== undefined) ? Number(data.balance) : (data.totalProfit !== undefined ? Number(data.totalProfit) : 0);
+        setProfit(value);
       } else {
         console.error("Failed to fetch profit:", data.error);
         setProfit(0);
@@ -73,13 +74,15 @@ export default function Navbar() {
     }
   }, [isAuthenticated]);
 
-  // Listen for profitUpdated event to refresh profit
+  // Listen for profitUpdated event to refresh balance
   useEffect(() => {
     const handleProfitUpdate = (e: CustomEvent) => {
       if (isAuthenticated) {
-        // If event has detail with totalProfit, use that
-        if (e.detail?.totalProfit !== undefined) {
-          setProfit(e.detail.totalProfit);
+        // Prefer balance for display; fallback to totalProfit
+        if (e.detail?.balance !== undefined) {
+          setProfit(Number(e.detail.balance));
+        } else if (e.detail?.totalProfit !== undefined) {
+          setProfit(Number(e.detail.totalProfit));
         } else {
           // Otherwise fetch fresh data
           fetchProfit();
@@ -95,6 +98,32 @@ export default function Navbar() {
         "profitUpdated",
         handleProfitUpdate as EventListener
       );
+    };
+  }, [isAuthenticated]);
+
+  // Proactively refresh on window focus/visibility change and with light polling
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const onFocus = () => {
+      fetchProfit();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchProfit();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Light polling every 30s to catch admin-side updates
+    const interval = setInterval(() => {
+      fetchProfit();
+    }, 30000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(interval);
     };
   }, [isAuthenticated]);
 
@@ -249,11 +278,11 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Profit Display */}
+        {/* Balance Display */}
         {isAuthenticated && (
           <div className="hidden md:flex items-center space-x-2 mr-4">
             <span className="text-yellow-400 font-bold text-lg">
-              {profitLoading ? "Profit: ..." : `Profit: $${profit ?? 0}`}
+              {profitLoading ? "Balance: ..." : `Balance: $${profit ?? 0}`}
             </span>
           </div>
         )}
@@ -464,7 +493,7 @@ export default function Navbar() {
             <>
               <div className="flex items-center space-x-2 mb-2 mt-2">
                 <span className="text-yellow-400 font-bold text-lg">
-                  {profitLoading ? "Profit: ..." : `Profit: $${profit ?? 0}`}
+                  {profitLoading ? "Balance: ..." : `Balance: $${profit ?? 0}`}
                 </span>
               </div>
               {/* Start Task or Deposit Button */}

@@ -86,7 +86,8 @@ function DepositPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setDepositHistory(data.deposits || []);
+        const deposits = data.deposits || [];
+        setDepositHistory(deposits);
         setStats(
           data.stats || {
             total: 0,
@@ -96,6 +97,8 @@ function DepositPage() {
             totalAmount: 0,
           }
         );
+        // Gate: if user has any deposit record (pending/confirmed/rejected), block new deposits
+        setHasDeposited(deposits.length > 0);
       }
     } catch (error) {
       console.error("Failed to fetch deposit history:", error);
@@ -110,7 +113,7 @@ function DepositPage() {
     }
   }, [user]);
 
-  // Check if user has already deposited
+  // Optional fallback: also check plan progress; if found, ensure hasDeposited is true
   useEffect(() => {
     const fetchPlanProgress = async () => {
       if (!user || !getToken()) return;
@@ -129,11 +132,9 @@ function DepositPage() {
           data.progresses.length > 0
         ) {
           setHasDeposited(true);
-        } else {
-          setHasDeposited(false);
         }
       } catch {
-        setHasDeposited(false);
+        // ignore
       }
     };
     fetchPlanProgress();

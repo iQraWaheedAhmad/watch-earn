@@ -113,13 +113,10 @@ export async function GET(request: NextRequest) {
 
     // Get referral stats
     const [rewards, referredUsers] = await Promise.all([
-      // Get all rewards where the user is either referrer or referred
+      // Only rewards where the user is the referrer (inviter)
       prisma.referralReward.findMany({
         where: {
-          OR: [
-            { referrerId: userId },
-            { referredUserId: userId }
-          ]
+          referrerId: userId,
         },
         orderBy: { createdAt: 'desc' },
         include: {
