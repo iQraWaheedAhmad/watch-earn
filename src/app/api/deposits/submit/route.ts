@@ -4,6 +4,8 @@ import { requireAuth, AuthRequest } from "../../auth/middleware";
 import { PLAN_REWARDS } from "@/lib/referral";
 import { Prisma } from "@prisma/client";
 
+export const runtime = 'nodejs';
+
 // Submit a deposit: creates a pending deposit record only
 async function submitDeposit(request: AuthRequest) {
   try {

@@ -8,8 +8,39 @@ export const GET = requireAuth(async (req: AuthRequest) => {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    // Fetch user's current balance (includes paid referral rewards and prior withdrawals)
+    // 1) Reconcile: credit any paid referral rewards that haven't been credited to balance yet
+    // We mark credited rewards by appending " [credited]" to planType to avoid double-crediting, no schema change required
+    await prisma.$transaction(async (tx) => {
+      const uncreditedPaid = await tx.referralReward.findMany({
+        where: {
+          referrerId: userId,
+          status: 'paid',
+          OR: [
+            { planType: null },
+            { planType: { not: { endsWith: ' [credited]' } } },
+          ],
+        },
+        select: { id: true, amount: true, planType: true },
+      });
+      if (uncreditedPaid.length > 0) {
+        const totalToCredit = uncreditedPaid.reduce((sum, r) => sum + Number(r.amount), 0);
+        if (totalToCredit > 0) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { balance: { increment: totalToCredit }, totalEarned: { increment: totalToCredit } },
+          });
+        }
+        // mark each as credited to avoid double-credit
+        for (const r of uncreditedPaid) {
+          await tx.referralReward.update({
+            where: { id: r.id },
+            data: { planType: `${r.planType ?? 'Referral Bonus'} [credited]` },
+          });
+        }
+      }
+    });
+
+    // Fetch user's current balance (after any reconciliation) and plan progresses
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { balance: true },
@@ -75,11 +106,11 @@ export const GET = requireAuth(async (req: AuthRequest) => {
     // Calculate total profit from plan progresses
     const planProfit = progresses.reduce((sum, p) => sum + (p.profit || 0), 0);
     
-    // Calculate total from referral rewards (referrer only, paid)
+    // Calculate total from referral rewards (paid). For display/debugging only.
     const referralProfit = referralRewards.reduce((sum, r) => sum + Number(r.amount), 0);
 
-    // Total profit is the sum of plan profit and referral profit
-    const totalProfit = planProfit + referralProfit;
+    // Total profit available to user should be balance + plan profits (referral rewards are already credited into balance via reconciliation)
+    const totalProfit = Number(user?.balance ?? 0) + planProfit;
     
     // Check withdrawal eligibility (only based on plan progress, not referral rewards)
     const canWithdraw = progresses.some(

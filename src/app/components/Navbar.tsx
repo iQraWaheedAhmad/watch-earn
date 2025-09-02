@@ -36,7 +36,7 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  // Fetch user balance (prefer balance for display; fallback to totalProfit)
+  // Fetch user balance for display. Referral rewards are reconciled into balance server-side.
   const fetchProfit = useCallback(async () => {
     if (!isAuthenticated || !getToken()) return;
 
@@ -53,8 +53,8 @@ export default function Navbar() {
       const data = await res.json();
       console.log("Fetched profit data:", data); // Debug line
       if (res.ok && data.success) {
-        const value = (data.balance !== undefined) ? Number(data.balance) : (data.totalProfit !== undefined ? Number(data.totalProfit) : 0);
-        setProfit(value);
+        const balanceVal = data.balance !== undefined ? Number(data.balance) : 0;
+        setProfit(balanceVal);
       } else {
         console.error("Failed to fetch profit:", data.error);
         setProfit(0);
@@ -75,58 +75,6 @@ export default function Navbar() {
     }
   }, [isAuthenticated, fetchProfit]);
 
-  // Listen for profitUpdated event to refresh balance
-  useEffect(() => {
-    const handleProfitUpdate = (e: CustomEvent) => {
-      if (isAuthenticated) {
-        // Prefer balance for display; fallback to totalProfit
-        if (e.detail?.balance !== undefined) {
-          setProfit(Number(e.detail.balance));
-        } else if (e.detail?.totalProfit !== undefined) {
-          setProfit(Number(e.detail.totalProfit));
-        } else {
-          // Otherwise fetch fresh data
-          fetchProfit();
-        }
-      }
-    };
-    window.addEventListener(
-      "profitUpdated",
-      handleProfitUpdate as EventListener
-    );
-    return () => {
-      window.removeEventListener(
-        "profitUpdated",
-        handleProfitUpdate as EventListener
-      );
-    };
-  }, [isAuthenticated, fetchProfit]);
-
-  // Proactively refresh on window focus/visibility change and with light polling
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const onFocus = () => {
-      fetchProfit();
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchProfit();
-    };
-
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    // Light polling every 60s to catch admin-side updates
-    const interval = setInterval(() => {
-      fetchProfit();
-    }, 60000);
-
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
-      clearInterval(interval);
-    };
-  }, [isAuthenticated, fetchProfit]);
 
   // Fetch plan progress for timer/button
   useEffect(() => {

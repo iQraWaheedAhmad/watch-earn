@@ -67,7 +67,9 @@ function DepositPage() {
     totalAmount: 0,
   });
   const [selectedProof, setSelectedProof] = useState<string | null>(null);
-  const [hasDeposited, setHasDeposited] = useState(false);
+  // Track deposit gating states separately
+  const [hasConfirmedDeposit, setHasConfirmedDeposit] = useState(false);
+  const [hasPendingDeposit, setHasPendingDeposit] = useState(false);
 
   const walletAddresses = {
     USDT: "TJuZCvYANND2emRa4ssrWqpZswPFUaJVWQ",
@@ -97,8 +99,13 @@ function DepositPage() {
             totalAmount: 0,
           }
         );
-        // Gate: if user has any deposit record (pending/confirmed/rejected), block new deposits
-        setHasDeposited(deposits.length > 0);
+        // Gate rules:
+        // - Block new deposits only if there's a CONFIRMED deposit
+        // - Disable submit if there is a PENDING deposit (awaiting admin)
+        const confirmed = deposits.some((d: Deposit) => (d.status || '').toLowerCase() === 'confirmed');
+        const pending = deposits.some((d: Deposit) => (d.status || '').toLowerCase() === 'pending');
+        setHasConfirmedDeposit(confirmed);
+        setHasPendingDeposit(pending);
       }
     } catch (error) {
       console.error("Failed to fetch deposit history:", error);
@@ -113,7 +120,7 @@ function DepositPage() {
     }
   }, [user?.id, fetchDepositHistory]);
 
-  // Optional fallback: also check plan progress; if found, ensure hasDeposited is true
+  // Optional fallback: also check plan progress; if found, ensure confirmed gate is true
   useEffect(() => {
     const fetchPlanProgress = async () => {
       if (!user || !getToken()) return;
@@ -131,7 +138,7 @@ function DepositPage() {
           data.progresses &&
           data.progresses.length > 0
         ) {
-          setHasDeposited(true);
+          setHasConfirmedDeposit(true);
         }
       } catch {
         // ignore
@@ -316,7 +323,7 @@ function DepositPage() {
     );
   };
 
-  if (hasDeposited) {
+  if (hasConfirmedDeposit) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-6">
         <div className="bg-gray-800 p-8 rounded-lg shadow-lg text-center">
@@ -324,8 +331,7 @@ function DepositPage() {
             Deposit Complete
           </h2>
           <p className="text-white mb-2">
-            You have already made a deposit. Only one deposit is allowed per
-            user.
+            You have a confirmed deposit. Only one confirmed deposit is allowed per user.
           </p>
           <button
             onClick={() => router.push("/")}
@@ -484,11 +490,16 @@ function DepositPage() {
                   </div>
                 )}
 
+                {hasPendingDeposit && (
+                  <div className="mb-4 p-3 bg-yellow-900/40 border border-yellow-700 rounded-lg text-yellow-300 text-sm">
+                    You already have a pending deposit awaiting admin confirmation. You cannot submit a new one until it is processed.
+                  </div>
+                )}
                 <button
                   type="submit"
-                  disabled={loading || hasDeposited}
+                  disabled={loading || hasPendingDeposit || hasConfirmedDeposit}
                   className={`w-full ${
-                    loading || hasDeposited
+                    loading || hasPendingDeposit || hasConfirmedDeposit
                       ? "bg-blue-800 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
                   } text-white py-3 rounded font-semibold flex items-center justify-center`}
@@ -498,8 +509,10 @@ function DepositPage() {
                       <Loader2 className="animate-spin mr-2 h-5 w-5" />
                       Processing...
                     </>
-                  ) : hasDeposited ? (
+                  ) : hasConfirmedDeposit ? (
                     "Deposit Complete"
+                  ) : hasPendingDeposit ? (
+                    "Awaiting Confirmation"
                   ) : (
                     "Submit Deposit"
                   )}

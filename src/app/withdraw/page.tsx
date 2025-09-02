@@ -10,6 +10,7 @@ import {
   History,
   XCircle,
   CheckSquare,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
@@ -62,6 +63,25 @@ function WithdrawPage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("withdraw"); // withdraw or history
   const [availableBalance, setAvailableBalance] = useState(0);
+
+  // Unified balance refetcher: use balance only (server reconciles referral rewards)
+  const refetchBalance = useCallback(async () => {
+    try {
+      const res = await fetch("/api/plan/all-progress", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const balanceVal = data.balance !== undefined ? Number(data.balance) : 0;
+        setAvailableBalance(balanceVal);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("profitUpdated", { detail: { balance: balanceVal } })
+          );
+        }
+      }
+    } catch {}
+  }, [getToken]);
 
   // Backend eligibility check for withdrawal
   // Update in withdraw page
@@ -159,75 +179,29 @@ function WithdrawPage() {
     }
   }, [searchParams, fetchWithdrawalHistory]);
 
-  // Fetch available balance (prefer balance for display; fallback to totalProfit)
+  // Fetch available balance (balance only)
   useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const res = await fetch("/api/plan/all-progress", {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const data = await res.json();
-        if (res.ok) {
-          const balanceVal = data.balance !== undefined ? Number(data.balance) : undefined;
-          const totalProfitVal = data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
-          // Prefer balance so UI matches Navbar and reflects deductions immediately
-          if (balanceVal !== undefined) {
-            setAvailableBalance(balanceVal);
-          } else if (totalProfitVal !== undefined) {
-            setAvailableBalance(totalProfitVal);
-          }
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('profitUpdated', { detail: { balance: balanceVal, totalProfit: totalProfitVal } })
-            );
-          }
-        }
-      } catch {}
-    };
-    fetchBalance();
-  }, [getToken]);
+    refetchBalance();
+  }, [refetchBalance]);
 
   // After a successful withdrawal, update balance and stats
   useEffect(() => {
     if (message) {
       // Refetch balance and withdrawal history
       const fetchBalance = async () => {
-        try {
-          const res = await fetch("/api/plan/all-progress", {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          });
-          const data = await res.json();
-          if (res.ok) {
-            const balanceVal = data.balance !== undefined ? Number(data.balance) : undefined;
-            const totalProfitVal = data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
-            if (balanceVal !== undefined) {
-              setAvailableBalance(balanceVal);
-            } else if (totalProfitVal !== undefined) {
-              setAvailableBalance(totalProfitVal);
-            }
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(
-                new CustomEvent('profitUpdated', { detail: { balance: balanceVal, totalProfit: totalProfitVal } })
-              );
-            }
-          }
-        } catch {}
+        await refetchBalance();
       };
       fetchBalance();
       fetchWithdrawalHistory();
     }
-  }, [message, getToken, fetchWithdrawalHistory]);
+  }, [message, refetchBalance, fetchWithdrawalHistory]);
 
-  // Live update when global profit/balance is updated elsewhere
+  // Live update when global balance is updated elsewhere
   useEffect(() => {
     const onProfitUpdated = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
-      const balanceVal =
-        detail.balance !== undefined ? Number(detail.balance) : undefined;
-      const totalProfitVal =
-        detail.totalProfit !== undefined ? Number(detail.totalProfit) : undefined;
+      const balanceVal = detail.balance !== undefined ? Number(detail.balance) : undefined;
       if (balanceVal !== undefined) setAvailableBalance(balanceVal);
-      else if (totalProfitVal !== undefined) setAvailableBalance(totalProfitVal);
     };
     if (typeof window !== "undefined") {
       window.addEventListener("profitUpdated", onProfitUpdated as EventListener);
@@ -245,27 +219,7 @@ function WithdrawPage() {
   // Proactively refresh on focus/visibility change and with light polling
   useEffect(() => {
     const refetch = async () => {
-      try {
-        const res = await fetch("/api/plan/all-progress", {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const data = await res.json();
-        if (res.ok) {
-          const balanceVal =
-            data.balance !== undefined ? Number(data.balance) : undefined;
-          const totalProfitVal =
-            data.totalProfit !== undefined ? Number(data.totalProfit) : undefined;
-          if (totalProfitVal !== undefined) setAvailableBalance(totalProfitVal);
-          else if (balanceVal !== undefined) setAvailableBalance(balanceVal);
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("profitUpdated", {
-                detail: { totalProfit: totalProfitVal, balance: balanceVal },
-              })
-            );
-          }
-        }
-      } catch {}
+      await refetchBalance();
       // Also keep history fresh
       fetchWithdrawalHistory();
     };
@@ -292,7 +246,14 @@ function WithdrawPage() {
       }
       clearInterval(interval);
     };
-  }, [getToken, fetchWithdrawalHistory]);
+  }, [refetchBalance, fetchWithdrawalHistory]);
+
+  // When switching back to the Withdraw tab, refresh the available balance
+  useEffect(() => {
+    if (activeTab === "withdraw") {
+      refetchBalance();
+    }
+  }, [activeTab, refetchBalance]);
 
   // Validate amount on change (only allow positive integers >= 1)
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -493,7 +454,18 @@ function WithdrawPage() {
                 pattern="^[1-9][0-9]*$"
                 aria-label="Amount to withdraw (whole number)"
               />
-              <p className="text-xs text-gray-400 mb-2">Available to Withdraw: ${availableBalance}</p>
+              <div className="text-xs text-gray-400 mb-2 flex items-center gap-2">
+                <span>Available to Withdraw: ${availableBalance}</span>
+                <button
+                  type="button"
+                  onClick={refetchBalance}
+                  className="text-blue-400 hover:text-blue-300"
+                  title="Refresh available balance"
+                  aria-label="Refresh available balance"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
 
               {message && (
                 <div className="mb-4 p-3 bg-green-900/50 border border-green-700 rounded-lg">

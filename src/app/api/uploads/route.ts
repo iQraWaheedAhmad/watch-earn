@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { requireAuth, AuthRequest } from "../auth/middleware";
 import { prisma } from "@/lib/prisma";
 
+// Ensure Node runtime for Buffer/Prisma
+export const runtime = 'nodejs';
+
 async function uploadFile(request: AuthRequest) {
   try {
     const formData = await request.formData();

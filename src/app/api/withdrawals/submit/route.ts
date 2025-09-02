@@ -36,7 +36,7 @@ async function submitWithdrawal(request: AuthRequest) {
       );
     }
 
-    // Fetch user's withdrawable balance
+    // Fetch user's current balance and plan profits
     const user = await prisma.user.findUnique({
       where: { id: Number(userId) },
       select: { balance: true },
@@ -52,22 +52,18 @@ async function submitWithdrawal(request: AuthRequest) {
     const available = Number(user.balance);
 
     // Compute totalProfit = plan profits + paid referral rewards (same as all-progress)
-    const [progresses, referralPaidAgg] = await Promise.all([
+    const [progresses] = await Promise.all([
       prisma.userPlanProgress.findMany({
         where: { userId: Number(userId) },
         select: { profit: true },
       }),
-      prisma.referralReward.aggregate({
-        where: { referrerId: Number(userId), status: "paid" },
-        _sum: { amount: true },
-      }),
     ]);
 
     const planProfit = progresses.reduce((sum, p) => sum + (p.profit || 0), 0);
-    const referralProfit = Number(referralPaidAgg._sum.amount || 0);
-    const totalProfit = planProfit + referralProfit;
+    // New definition: total available to withdraw = current balance + plan profits
+    const totalAvailable = Number(user.balance) + planProfit;
 
-    if (parsedAmount > totalProfit) {
+    if (parsedAmount > totalAvailable) {
       return NextResponse.json(
         { message: "Insufficient balance" },
         { status: 400 }
@@ -80,7 +76,7 @@ async function submitWithdrawal(request: AuthRequest) {
     // Deduct from balance and create withdrawal atomically
     const result = await prisma.$transaction(async (tx) => {
       if (neededTopUp > 0) {
-        // Pull neededTopUp from plan profits: decrement userPlanProgress.profit across records
+        // Pull from plan profits: decrement userPlanProgress.profit across records
         const progressesForUpdate = await tx.userPlanProgress.findMany({
           where: { userId: Number(userId), profit: { gt: 0 } },
           select: { id: true, profit: true },
@@ -88,23 +84,28 @@ async function submitWithdrawal(request: AuthRequest) {
         });
 
         let remaining = neededTopUp;
+        let actuallyDeductedFromProfit = 0;
         for (const p of progressesForUpdate) {
           if (remaining <= 0) break;
-          const take = Math.min(Number(p.profit || 0), remaining);
+          const availableProfit = Number(p.profit || 0);
+          const take = Math.min(availableProfit, remaining);
           if (take > 0) {
             await tx.userPlanProgress.update({
               where: { id: p.id },
               data: { profit: { decrement: take } },
             });
             remaining -= take;
+            actuallyDeductedFromProfit += take;
           }
         }
 
-        // Credit the user's balance by the exact top-up amount sourced from plan profits
-        await tx.user.update({
-          where: { id: Number(userId) },
-          data: { balance: { increment: neededTopUp } },
-        });
+        if (actuallyDeductedFromProfit > 0) {
+          // Credit the user's balance by the exact amount sourced from plan profits
+          await tx.user.update({
+            where: { id: Number(userId) },
+            data: { balance: { increment: actuallyDeductedFromProfit } },
+          });
+        }
       }
 
       await tx.user.update({

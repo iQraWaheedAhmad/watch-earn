@@ -45,6 +45,7 @@ const Videos = () => {
   >(null);
   const [showRejectedModal, setShowRejectedModal] = useState(false);
   const [roundError, setRoundError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Fetch user's active plan on component mount
   useEffect(() => {
@@ -155,8 +156,11 @@ const Videos = () => {
 
   // Update the complete round
   const completeRound = async () => {
+    if (submitting) return; // prevent duplicate requests
+    setSubmitting(true);
     if (!currentPlan) {
       toast.error("No active plan found");
+      setSubmitting(false);
       return;
     }
     try {
@@ -205,6 +209,7 @@ const Videos = () => {
           },
         });
         setShowMessage(true);
+        setSubmitting(false);
       }, 500);
     } catch (error: unknown) {
       console.error("[COMPLETE ROUND] Error:", error);
@@ -215,11 +220,12 @@ const Videos = () => {
       setRoundError(errorMessage || "Failed to complete round");
       toast.error(errorMessage || "Failed to complete round");
       setShowMessage(true);
+      setSubmitting(false);
     }
   };
 
   const nextVideo = async () => {
-    if (!isVideoEnded) return;
+    if (!isVideoEnded || submitting) return;
 
     // If this is the last video, complete the round
     if (currentVideo >= videoUrls.length - 1) {
@@ -477,10 +483,11 @@ const Videos = () => {
           <button
             onClick={nextVideo}
             className={`py-3 px-6 rounded-lg font-medium transition ${
-              !isVideoEnded
+              !isVideoEnded || submitting
                 ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                 : "bg-yellow-500 text-black hover:bg-yellow-400"
             }`}
+            disabled={!isVideoEnded || submitting}
           >
             {currentVideo >= videoUrls.length - 1
               ? "Complete Round"
@@ -491,12 +498,14 @@ const Videos = () => {
             <button
               onClick={goToWithdraw}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition"
+              disabled={submitting}
             >
               💰 Withdraw ${progress.profit}
             </button>
             <button
               onClick={startNextRound}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition"
+              disabled={submitting}
             >
               Start Next Round
             </button>
@@ -506,6 +515,7 @@ const Videos = () => {
             <button
               onClick={startNextRound}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition"
+              disabled={submitting}
             >
               Try Again
             </button>

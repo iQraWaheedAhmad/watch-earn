@@ -4,6 +4,8 @@ import { requireAuth, AuthRequest } from "../../auth/middleware";
 import type { ReferralReward } from "@prisma/client";
 import { processReferralReward, approveReferralReward } from "@/lib/referral";
 
+export const runtime = 'nodejs';
+
 // Process deposit confirmation and handle balance updates and referral rewards
 async function confirmDeposit(request: AuthRequest) {
   try {

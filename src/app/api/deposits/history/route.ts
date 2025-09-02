@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, AuthRequest } from '../../auth/middleware';
 
+export const runtime = 'nodejs';
+
 // Handler for GET requests (protected by auth)
 async function getDepositHistory(request: AuthRequest) {
   try {
