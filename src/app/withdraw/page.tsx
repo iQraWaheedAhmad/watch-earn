@@ -294,15 +294,53 @@ function WithdrawPage() {
     };
   }, [getToken, fetchWithdrawalHistory]);
 
-  // Validate amount on change
+  // Validate amount on change (only allow positive integers >= 1)
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(e.target.value);
+    const raw = e.target.value;
+    // Allow clearing the field
+    if (raw === "") {
+      setAmount("");
+      setError("");
+      return;
+    }
+
+    // Normalize leading zeros
+    const normalized = raw.replace(/^0+/, "");
+    if (normalized === "") {
+      // Was all zeros -> treat as empty
+      setAmount("");
+      setError("");
+      return;
+    }
+
+    // Must match whole number >=1
+    if (!/^[1-9]\d*$/.test(normalized)) {
+      setError("Enter a whole number amount (1 or higher)");
+      return;
+    }
+
+    setAmount(normalized);
     setError("");
-    const val = parseFloat(e.target.value);
-    if (!isNaN(val) && val > availableBalance) {
+    const intVal = parseInt(normalized, 10);
+    if (intVal > availableBalance) {
       setError(
         "Insufficient balance. Your available balance is $" + availableBalance
       );
+    }
+  };
+
+  // Block non-numeric/disallowed keys (e, E, +, -, .)
+  const handleAmountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["e", "E", "+", "-", "."].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // Prevent pasting invalid values
+  const handleAmountPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData("text");
+    if (!/^[1-9]\d*$/.test(text)) {
+      e.preventDefault();
     }
   };
 
@@ -312,12 +350,14 @@ function WithdrawPage() {
       return;
     }
 
-    if (!amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount");
+    // Require a whole number >= 1
+    if (!amount || !/^[1-9]\d*$/.test(amount)) {
+      setError("Please enter a valid whole number amount (1 or higher)");
       return;
     }
 
-    if (parseFloat(amount) > availableBalance) {
+    const intVal = parseInt(amount, 10);
+    if (intVal > availableBalance) {
       setError(
         "Insufficient balance. Your available balance is $" + availableBalance
       );
@@ -442,13 +482,16 @@ function WithdrawPage() {
                 Amount to Withdraw
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Enter amount"
                 value={amount}
                 onChange={handleAmountChange}
+                onKeyDown={handleAmountKeyDown}
+                onPaste={handleAmountPaste}
                 className="w-full p-3 rounded bg-gray-700 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="0"
-                step="0.01"
+                pattern="^[1-9][0-9]*$"
+                aria-label="Amount to withdraw (whole number)"
               />
               <p className="text-xs text-gray-400 mb-2">Available to Withdraw: ${availableBalance}</p>
 

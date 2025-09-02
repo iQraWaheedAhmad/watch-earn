@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle,
@@ -74,7 +74,7 @@ function DepositPage() {
   };
 
   // Fetch deposit history
-  const fetchDepositHistory = async () => {
+  const fetchDepositHistory = useCallback(async () => {
     if (!user?.id) return;
 
     setHistoryLoading(true);
@@ -105,13 +105,13 @@ function DepositPage() {
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [user?.id, getToken]);
 
   useEffect(() => {
     if (user?.id) {
       fetchDepositHistory();
     }
-  }, [user]);
+  }, [user?.id, fetchDepositHistory]);
 
   // Optional fallback: also check plan progress; if found, ensure hasDeposited is true
   useEffect(() => {

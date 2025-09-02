@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
@@ -36,7 +37,7 @@ export default function Navbar() {
   };
 
   // Fetch user balance (prefer balance for display; fallback to totalProfit)
-  const fetchProfit = async () => {
+  const fetchProfit = useCallback(async () => {
     if (!isAuthenticated || !getToken()) return;
 
     setProfitLoading(true);
@@ -64,7 +65,7 @@ export default function Navbar() {
     } finally {
       setProfitLoading(false);
     }
-  };
+  }, [isAuthenticated, getToken]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -72,7 +73,7 @@ export default function Navbar() {
     } else {
       setProfit(null);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchProfit]);
 
   // Listen for profitUpdated event to refresh balance
   useEffect(() => {
@@ -99,7 +100,7 @@ export default function Navbar() {
         handleProfitUpdate as EventListener
       );
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchProfit]);
 
   // Proactively refresh on window focus/visibility change and with light polling
   useEffect(() => {
@@ -115,17 +116,17 @@ export default function Navbar() {
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Light polling every 30s to catch admin-side updates
+    // Light polling every 60s to catch admin-side updates
     const interval = setInterval(() => {
       fetchProfit();
-    }, 30000);
+    }, 60000);
 
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
       clearInterval(interval);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchProfit]);
 
   // Fetch plan progress for timer/button
   useEffect(() => {
@@ -284,6 +285,15 @@ export default function Navbar() {
             <span className="text-yellow-400 font-bold text-lg">
               {profitLoading ? "Balance: ..." : `Balance: $${profit ?? 0}`}
             </span>
+            <button
+              onClick={fetchProfit}
+              title="Refresh balance"
+              aria-label="Refresh balance"
+              className="text-yellow-400 hover:text-yellow-300 disabled:opacity-60"
+              disabled={profitLoading}
+            >
+              <RefreshCw className={`w-5 h-5 ${profitLoading ? "animate-spin" : ""}`} />
+            </button>
           </div>
         )}
 
@@ -495,6 +505,15 @@ export default function Navbar() {
                 <span className="text-yellow-400 font-bold text-lg">
                   {profitLoading ? "Balance: ..." : `Balance: $${profit ?? 0}`}
                 </span>
+                <button
+                  onClick={fetchProfit}
+                  title="Refresh balance"
+                  aria-label="Refresh balance"
+                  className="text-yellow-400 hover:text-yellow-300 disabled:opacity-60"
+                  disabled={profitLoading}
+                >
+                  <RefreshCw className={`w-5 h-5 ${profitLoading ? "animate-spin" : ""}`} />
+                </button>
               </div>
               {/* Start Task or Deposit Button */}
               {!depositStatus ? (
