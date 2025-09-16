@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <AuthProvider>
-        
+        <Navbar />
           <main className="pt-16">{children}</main>
           
         </AuthProvider>
