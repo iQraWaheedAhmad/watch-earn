@@ -12,7 +12,12 @@ import About from './about/page';
 export default function Home() {
   return (
     <div>
-   
+   <Hero />
+   <MoreInfo />
+   <Detail />
+   <About />
+   <Account />
+   <Footer />   
     </div>
   );
 }
